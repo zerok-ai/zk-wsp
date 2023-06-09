@@ -10,4 +10,4 @@ spec:
   ports:
     - protocol: TCP
       port: 8989
-      targetPort: 32080
+      targetPort: 8989

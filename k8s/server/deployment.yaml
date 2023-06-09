@@ -20,7 +20,7 @@ spec:
             - name: server-config
               mountPath: /opt
           ports:
-            - containerPort: 32080
+            - containerPort: 8989
       volumes:
         - name: server-config
           configMap:
