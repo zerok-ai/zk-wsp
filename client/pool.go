@@ -35,7 +35,7 @@ func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 func (pool *Pool) Start(ctx context.Context) {
 	pool.connector(ctx)
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
 
 	L:

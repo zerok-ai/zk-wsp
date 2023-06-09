@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -89,13 +89,15 @@ func (s *Server) Start() {
 	r := http.NewServeMux()
 	// TODO: I want to detach the handler function from the Server struct,
 	// but it is tightly coupled to the internal state of the Server.
-	r.HandleFunc("/register", s.Register)
-	r.HandleFunc("/request", s.Request)
+	r.HandleFunc("/w/register", s.Register)
+	r.HandleFunc("/w/request", s.Request)
 	r.HandleFunc("/status", s.status)
 
 	// Dispatch connection from available pools to clients requests
 	// in a separate thread from the server thread.
 	go s.dispatchConnections()
+
+	fmt.Println("Starting server on address ", s.Config.GetAddr())
 
 	s.server = &http.Server{
 		Addr:    s.Config.GetAddr(),
@@ -254,12 +256,13 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 
 // Request receives the WebSocket upgrade handshake request from wsp_client.
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println(r)
 	// 1. Upgrade a received HTTP request to a WebSocket connection
-	secretKey := r.Header.Get("X-SECRET-KEY")
-	if secretKey != s.Config.SecretKey {
-		wsp.ProxyErrorf(w, "Invalid X-SECRET-KEY")
-		return
-	}
+	clusterId := PoolID(r.Header.Get("X-CLUSTER-ID"))
+	sizeStr := r.Header.Get("X-POOL-SIZE")
+
+	//Check validity of clusterId
 
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -267,21 +270,9 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Wait a greeting message from the peer and parse it
-	// The first message should contains the remote Proxy name and size
-	_, greeting, err := ws.ReadMessage()
+	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
-		wsp.ProxyErrorf(w, "Unable to read greeting message : %s", err)
-		ws.Close()
-		return
-	}
-
-	// Parse the greeting message
-	split := strings.Split(string(greeting), "_")
-	id := PoolID(split[0])
-	size, err := strconv.Atoi(split[1])
-	if err != nil {
-		wsp.ProxyErrorf(w, "Unable to parse greeting message : %s", err)
+		wsp.ProxyErrorf(w, "Unable to parse size : %s", err)
 		ws.Close()
 		return
 	}
@@ -295,13 +286,13 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	// There is no need to create a new pool,
 	// if it is already registered in current pools.
 	for _, p := range s.pools {
-		if p.id == id {
+		if p.id == clusterId {
 			pool = p
 			break
 		}
 	}
 	if pool == nil {
-		pool = NewPool(s, id)
+		pool = NewPool(s, clusterId)
 		s.pools = append(s.pools, pool)
 	}
 	// update pool size

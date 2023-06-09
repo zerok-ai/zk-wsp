@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -44,7 +45,7 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 	connection.ws, _, err = connection.pool.client.dialer.DialContext(
 		ctx,
 		connection.pool.target,
-		http.Header{"X-SECRET-KEY": {connection.pool.secretKey}},
+		http.Header{"X-CLUSTER-ID": {connection.pool.client.Config.ID}, "X-POOL-SIZE": {strconv.Itoa(connection.pool.client.Config.PoolIdleSize)}},
 	)
 
 	if err != nil {
@@ -53,27 +54,15 @@ func (connection *Connection) Connect(ctx context.Context) (err error) {
 
 	log.Printf("Connected to %s", connection.pool.target)
 
-	// Send the greeting message with proxy id and wanted pool size.
-	greeting := fmt.Sprintf(
-		"%s_%d",
-		connection.pool.client.Config.ID,
-		connection.pool.client.Config.PoolIdleSize,
-	)
-	if err := connection.ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
-		log.Println("greeting error :", err)
-		connection.Close()
-		return err
-	}
-
 	go connection.serve(ctx)
 
 	return
 }
 
 // the main loop it :
-//  - wait to receive HTTP requests from the Server
-//  - execute HTTP requests
-//  - send HTTP response back to the Server
+//   - wait to receive HTTP requests from the Server
+//   - execute HTTP requests
+//   - send HTTP response back to the Server
 //
 // As in the server code there is no buffering of HTTP request/response body
 // As is the server if any error occurs the connection is closed/throwed
