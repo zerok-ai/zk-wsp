@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  wsp-config.yaml: |+
+    host: example.com
+    port: 8080
+    timeout: 30
+    idle_timeout: 60
+kind: ConfigMap
+metadata:
+  name: zk-wsp-server-configmap
+  namespace: zkcloud

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zk-wsp-server-deployment
+  namespace: zkcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zk-wsp-server
+  template:
+    metadata:
+      labels:
+        app: zk-wsp-server
+    spec:
+      containers:
+        - name: zk-wsp-server
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-server:0.0.2
+          volumeMounts:
+            - name: server-config
+              mountPath: /opt
+          ports:
+            - containerPort: 32080
+      volumes:
+        - name: server-config
+          configMap:
+            name: zk-wsp-server-configmap

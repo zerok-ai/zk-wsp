@@ -11,7 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/root-gg/wsp"
+	"github.com/zerok-ai/zk-wsp"
 )
 
 // ConnectionStatus is an enumeration type which represents the status of WebSocket connection.

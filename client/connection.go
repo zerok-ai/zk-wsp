@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/root-gg/wsp"
+	"github.com/zerok-ai/zk-wsp"
 )
 
 // Status of a Connection

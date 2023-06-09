@@ -1,0 +1,4 @@
+host: example.com
+port: 8080
+timeout: 30
+idle_timeout: 60

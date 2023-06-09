@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/root-gg/wsp"
+	"github.com/zerok-ai/zk-wsp"
 )
 
 // Server is a Reverse HTTP Proxy over WebSocket

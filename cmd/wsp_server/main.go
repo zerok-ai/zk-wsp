@@ -1,27 +1,24 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"fmt"
+	"github.com/zerok-ai/zk-wsp/utils"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/root-gg/wsp/server"
+	"github.com/zerok-ai/zk-wsp/server"
 )
 
 func main() {
-	configFile := flag.String("config", "wsp_server.cfg", "config file path")
-	flag.Parse()
-
-	// Load configuration
-	config, err := server.LoadConfiguration(*configFile)
-	if err != nil {
-		log.Fatalf("Unable to load configuration : %s", err)
+	var config server.Config
+	if err := utils.ProcessArgs(&config); err != nil {
+		fmt.Println("Unable to process wsp server config. Stopping wsp server.")
+		return
 	}
 
-	server := server.NewServer(config)
-	server.Start()
+	wspServer := server.NewServer(&config)
+	wspServer.Start()
 
 	// Wait signals
 	sigCh := make(chan os.Signal, 1)
@@ -29,5 +26,5 @@ func main() {
 	<-sigCh
 
 	// When receives the signal, shutdown
-	server.Shutdown()
+	wspServer.Shutdown()
 }

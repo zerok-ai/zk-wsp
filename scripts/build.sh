@@ -30,12 +30,12 @@ variable=$1
 if [ "$variable" == "server" ]; then
     echo "Building wsp server"
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_server cmd/wsp_server/main.go
-    docker build . -t "$SERVER_IMG" --build-arg APP_FILE=wsp_server --build-arg CONFIG_FILE=examples/wsp_server.cfg
+    docker build . -t "$SERVER_IMG" --build-arg APP_FILE=wsp_server
     docker push "$SERVER_IMG"
 elif [ "$variable" == "client" ]; then
     echo "Building wsp client"
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
-    docker build . -t "$CLIENT_IMG" --build-arg APP_FILE=wsp_client --build-arg CONFIG_FILE=examples/wsp_client.cfg
+    docker build . -t "$CLIENT_IMG" --build-arg APP_FILE=wsp_client
     docker push "$CLIENT_IMG"
 else
     echo "Variable is neither server nor client"

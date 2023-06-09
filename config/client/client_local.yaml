@@ -1,0 +1,6 @@
+id: "123"
+targets:
+  - ws://zkdev02.getanton.com:80/w/register
+poolIdleSize: 1
+poolMaxSize: 100
+secretKey: ""

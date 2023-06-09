@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ws-ingress
+  namespace: zkcloud
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/server-snippets: |
+      location /w/register {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+       }
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: zkdev02.getanton.com
+      http:
+        paths:
+          - path: /w/register
+            pathType: Prefix
+            backend:
+              service:
+                name: zk-wsp-server-service
+                port:
+                  number: 8989

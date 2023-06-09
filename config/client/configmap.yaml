@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  wsp-config.yaml: |+
+    targets:
+      - ws://zkdev02.getanton.com:80/w/register
+    poolidlesize: 1
+    poolmaxsize: 100
+kind: ConfigMap
+metadata:
+  name: zk-wsp-client-configmap
+  namespace: zkcloud
