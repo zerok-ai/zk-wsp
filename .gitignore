@@ -3,6 +3,7 @@
 ssl/
 *.key
 *.crt
+bin/
 
 ## Built binaries
 /wsp_server

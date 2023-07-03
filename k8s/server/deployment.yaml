@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zk-wsp-server-deployment
-  namespace: zkcloud
 spec:
   replicas: 1
   selector:
@@ -15,7 +14,7 @@ spec:
     spec:
       containers:
         - name: zk-wsp-server
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-server:0.0.2
+          image: wsp-server:latest
           volumeMounts:
             - name: server-config
               mountPath: /opt

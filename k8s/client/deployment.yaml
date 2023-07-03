@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: zk-wsp-client
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-client:0.0.2
+          image: wsp-client:latest
           imagePullPolicy: Always
           volumeMounts:
             - name: wsp-config
