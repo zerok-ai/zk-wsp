@@ -1,40 +1,41 @@
 # zerok websocket proxy server
+### TODO: Add more description here.
 The websocket proxy server maintains a pool of connections between server and client. The proxy server supports full duplex communications.
 
 ### Running on the cluster
 
-The below command will build the server and push the updated image to docker.
+Run this command will build the server and push the updated image to docker.
 
 ```
 make build-server
 ```
 
-The below  command will build the client and push the updated image to docker.
+Run this command to build the client and push the updated image to docker.
 
 ```
 make build-client
 ```
 
-The below  command will install the server to the cluster in the current context.
+Run this command will install the server to the cluster in the current context.
 
 ```
 make install-server
 ```
 
-The below command will install the client to the cluster in the current context.
+Run this command will install the client to the cluster in the current context.
 
 ```
 make install-client
 ```
 
-Run the below commands to uninstall the client
+Run this commands to uninstall the client.
 
 ```
 make uninstall-client
 ```
 
 
-Run the below commands to uninstall the server
+Run this commands to uninstall the server.
 
 ```
 make uninstall-server
