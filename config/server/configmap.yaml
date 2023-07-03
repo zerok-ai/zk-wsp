@@ -4,7 +4,7 @@ data:
     host: 0.0.0.0
     port: 8989
     timeout: 3000
-    idle_timeout: 6000
+    idleTimeout: 6000
 kind: ConfigMap
 metadata:
   name: zk-wsp-server-configmap
