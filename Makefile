@@ -53,7 +53,7 @@ uninstall-server:
 
 .PHONY: install-client
 install-client: kustomize
-	kubectl apply -f config/server/configmap.yaml
+	kubectl apply -f config/client/configmap.yaml
 	cd k8s/client && $(KUSTOMIZE) edit set image wsp-client=${CLIENT_IMG}
 	kubectl apply -k k8s/client
 

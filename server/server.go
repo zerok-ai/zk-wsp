@@ -183,7 +183,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) clean() {
-	fmt.Println("Cleaning empty connections.")
+	//fmt.Println("Cleaning empty connections.")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

@@ -16,10 +16,10 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: zkdev02.getanton.com
+    - host: api.avinpx07.getanton.com
       http:
         paths:
-          - path: /w/register
+          - path: /register
             pathType: Prefix
             backend:
               service:

@@ -15,6 +15,7 @@ spec:
       containers:
         - name: zk-wsp-server
           image: wsp-server:latest
+          imagePullPolicy: Always
           volumeMounts:
             - name: server-config
               mountPath: /opt
