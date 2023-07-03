@@ -49,14 +49,13 @@ func NewWriteConnection(pool ConnectionPool, status int) *WriteConnection {
 	c.nextResponse = make(chan chan io.Reader)
 	c.Status = status
 
-	// Mark that this connection is ready to use for relay
-	c.Release()
-
 	return c
 }
 
 // read the incoming message of the connection
 func (connection *WriteConnection) Start() {
+	// Mark that this connection is ready to use for relay
+	connection.Release()
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Websocket crash recovered : %s", r)

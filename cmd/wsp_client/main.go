@@ -13,13 +13,13 @@ import (
 
 func main() {
 
-	var config client.Config
-	if err := utils.ProcessArgs(&config); err != nil {
+	config := client.NewConfig()
+	if err := utils.ProcessArgs(config); err != nil {
 		fmt.Println("Unable to process wsp client config. Stopping wsp client.")
 		return
 	}
 
-	proxy := client.NewClient(&config)
+	proxy := client.NewClient(config)
 	proxy.Start(context.Background())
 
 	// Wait signals

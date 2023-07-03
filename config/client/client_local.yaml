@@ -3,5 +3,5 @@ port : 8987                          # Port to bind the HTTP server
 timeout : 3000
 targets:
   - ws://localhost:8989/register
-poolIdleSize: 1
+poolIdleSize: 5
 poolMaxSize: 100
