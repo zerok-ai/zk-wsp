@@ -1,13 +1,11 @@
-package client
+package common
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
-	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -15,58 +13,39 @@ import (
 	"github.com/zerok-ai/zk-wsp"
 )
 
-// Status of a Connection
-const (
-	CONNECTING = iota
-	IDLE
-	RUNNING
-)
-
-// Connection handle a single websocket (HTTP/TCP) connection to an Server
-type Connection struct {
-	pool   *Pool
-	ws     *websocket.Conn
-	status int
+// ReadConnection handle a single websocket (HTTP/TCP) connection to an Server
+type ReadConnection struct {
+	pool      *ConnectionPool
+	ws        *websocket.Conn
+	idleSince time.Time
+	Status    int
+	lock      sync.RWMutex
 }
 
-// NewConnection create a Connection object
-func NewConnection(pool *Pool) *Connection {
-	c := new(Connection)
-	c.pool = pool
-	c.status = CONNECTING
+func (connection *ReadConnection) GetStatus() int {
+	return connection.Status
+}
+
+func (connection *ReadConnection) GetLock() *sync.RWMutex {
+	return &connection.lock
+}
+
+// NewReadConnection create a ReadConnection object
+func NewReadConnection(pool ConnectionPool, status int) *ReadConnection {
+	c := new(ReadConnection)
+	c.pool = &pool
+	c.Status = status
 	return c
 }
 
-// Connect to the IsolatorServer using a HTTP websocket
-func (connection *Connection) Connect(ctx context.Context) (err error) {
-	log.Printf("Connecting to %s", connection.pool.target)
-
-	// Create a new TCP(/TLS) connection ( no use of net.http )
-	connection.ws, _, err = connection.pool.client.dialer.DialContext(
-		ctx,
-		connection.pool.target,
-		http.Header{"X-CLUSTER-ID": {connection.pool.client.Config.ID}, "X-POOL-SIZE": {strconv.Itoa(connection.pool.client.Config.PoolIdleSize)}},
-	)
-
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Connected to %s", connection.pool.target)
-
-	go connection.serve(ctx)
-
-	return
-}
-
 // the main loop it :
-//   - wait to receive HTTP requests from the Server
+//   - wait to receive HTTP requests
 //   - execute HTTP requests
-//   - send HTTP response back to the Server
+//   - send HTTP response back
 //
-// As in the server code there is no buffering of HTTP request/response body
-// As is the server if any error occurs the connection is closed/throwed
-func (connection *Connection) serve(ctx context.Context) {
+// There is no buffering of HTTP request/response body
+// If any error occurs the connection is closed/throwed
+func (connection *ReadConnection) Start() {
 	defer connection.Close()
 
 	// Keep connection alive
@@ -82,17 +61,14 @@ func (connection *Connection) serve(ctx context.Context) {
 
 	for {
 		// Read request
-		connection.status = IDLE
+		connection.Status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
 		if err != nil {
 			log.Println("Unable to read request", err)
 			break
 		}
 
-		connection.status = RUNNING
-
-		// Trigger a pool refresh to open new connections if needed
-		go connection.pool.connector(ctx)
+		connection.Status = BUSY
 
 		// Deserialize request
 		httpRequest := new(wsp.HTTPRequest)
@@ -119,7 +95,8 @@ func (connection *Connection) serve(ctx context.Context) {
 		req.Body = io.NopCloser(bodyReader)
 
 		// Execute request
-		resp, err := connection.pool.client.client.Do(req)
+		httpClient := (*connection.pool).GetHttpClient()
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			err = connection.error(fmt.Sprintf("Unable to execute request : %v\n", err))
 			if err != nil {
@@ -160,7 +137,7 @@ func (connection *Connection) serve(ctx context.Context) {
 	}
 }
 
-func (connection *Connection) error(msg string) (err error) {
+func (connection *ReadConnection) error(msg string) (err error) {
 	resp := wsp.NewHTTPResponse()
 	resp.StatusCode = 527
 
@@ -193,10 +170,26 @@ func (connection *Connection) error(msg string) (err error) {
 }
 
 // Close close the ws/tcp connection and remove it from the pool
-func (connection *Connection) Close() {
-	connection.pool.lock.Lock()
-	defer connection.pool.lock.Unlock()
+func (connection *ReadConnection) Close() {
+	lock := (*connection.pool).GetLock()
+	lock.Lock()
+	defer lock.Unlock()
+	connection.CloseWithOutLock()
+}
 
-	connection.pool.remove(connection)
+func (connection *ReadConnection) CloseWithOutLock() {
+	(*connection.pool).Remove(connection)
 	connection.ws.Close()
+}
+
+func (connection *ReadConnection) GetWs() *websocket.Conn {
+	return connection.ws
+}
+
+func (connection *ReadConnection) SetWs(conn *websocket.Conn) {
+	connection.ws = conn
+}
+
+func (connection *ReadConnection) IdleSince() time.Time {
+	return connection.idleSince
 }

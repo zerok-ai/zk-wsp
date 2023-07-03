@@ -3,19 +3,22 @@ package client
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/zerok-ai/zk-wsp/common"
+	"net/http"
 	"sync"
 	"time"
 )
 
 // Pool manage a pool of connection to a remote Server
 type Pool struct {
-	client    *Client
-	target    string
-	secretKey string
-
-	connections []*Connection
-	lock        sync.RWMutex
+	client           *Client
+	target           string
+	secretKey        string
+	httpClient       *http.Client
+	readConnections  []*common.ReadConnection
+	writeConnections []*common.WriteConnection
+	lock             sync.RWMutex
+	idle             chan *common.WriteConnection
 
 	done chan struct{}
 }
@@ -24,8 +27,11 @@ type Pool struct {
 func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 	pool = new(Pool)
 	pool.client = client
+	pool.httpClient = client.client
 	pool.target = target
-	pool.connections = make([]*Connection, 0)
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
+	pool.idle = make(chan *common.WriteConnection)
 	pool.secretKey = secretKey
 	pool.done = make(chan struct{})
 	return
@@ -35,7 +41,7 @@ func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 func (pool *Pool) Start(ctx context.Context) {
 	pool.connector(ctx)
 	go func() {
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
 	L:
@@ -50,13 +56,23 @@ func (pool *Pool) Start(ctx context.Context) {
 	}()
 }
 
-// The garbage collector
+// Add new pool connections if needed.
 func (pool *Pool) connector(ctx context.Context) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 
-	poolSize := pool.Size()
+	readPoolSize, writePoolSize := pool.Size()
 
+	toCreateRead := pool.connectionsToCreate(readPoolSize)
+
+	pool.createConnections(ctx, toCreateRead, common.Read)
+
+	toCreateWrite := pool.connectionsToCreate(writePoolSize)
+
+	pool.createConnections(ctx, toCreateWrite, common.Write)
+}
+
+func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
 	// Create enough connection to fill the pool
 	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
 
@@ -65,82 +81,136 @@ func (pool *Pool) connector(ctx context.Context) {
 		toCreate = 1
 	}
 
-	// Ensure to open at most PoolMaxSize connections
+	// Ensure to open at most PoolMaxSize readConnections
 	if poolSize.total+toCreate > pool.client.Config.PoolMaxSize {
 		toCreate = pool.client.Config.PoolMaxSize - poolSize.total
 	}
+	return toCreate
+}
 
-	// Try to reach ideal pool size
+func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType common.ConnectionType) {
+	var interfaceConn common.Connection
 	for i := 0; i < toCreate; i++ {
-		conn := NewConnection(pool)
-		pool.connections = append(pool.connections, conn)
-
+		switch connType {
+		case common.Read:
+			conn := common.NewReadConnection(pool, common.CONNECTING)
+			pool.readConnections = append(pool.readConnections, conn)
+			interfaceConn = conn
+		case common.Write:
+			conn := common.NewWriteConnection(pool, common.CONNECTING)
+			pool.writeConnections = append(pool.writeConnections, conn)
+			interfaceConn = conn
+		default:
+			fmt.Println("Object is of unknown type")
+		}
 		go func() {
-			err := conn.Connect(ctx)
+			err := Connect(interfaceConn, ctx, pool, connType)
 			if err != nil {
-				log.Printf("Unable to connect to %s : %s", pool.target, err)
-
-				pool.lock.Lock()
-				defer pool.lock.Unlock()
-				pool.remove(conn)
+				fmt.Println("Error while creating connection type ", connType, " error is ", err)
+				return
 			}
 		}()
 	}
 }
 
-// Add a connection to the pool
-func (pool *Pool) add(conn *Connection) {
-	pool.connections = append(pool.connections, conn)
+func (pool *Pool) add(conn common.Connection) {
+	switch c := (conn).(type) {
+	case *common.ReadConnection:
+		pool.readConnections = append(pool.readConnections, c)
+	case *common.WriteConnection:
+		pool.writeConnections = append(pool.writeConnections, c)
+	default:
+		fmt.Println("Object is of unknown type")
+	}
+}
+
+// Offer offers an idle connection to the server.
+func (pool *Pool) Offer(connection *common.WriteConnection) {
+	pool.idle <- connection
 }
 
 // Remove a connection from the pool
-func (pool *Pool) remove(conn *Connection) {
-	// This trick uses the fact that a slice shares the same backing array and capacity as the original,
-	// so the storage is reused for the filtered slice. Of course, the original contents are modified.
-
-	var filtered []*Connection // == nil
-	for _, c := range pool.connections {
-		if conn != c {
-			filtered = append(filtered, c)
+func (pool *Pool) Remove(conn common.Connection) {
+	switch c := (conn).(type) {
+	case *common.ReadConnection:
+		var filtered []*common.ReadConnection // == nil
+		for _, i := range pool.readConnections {
+			if c != i {
+				filtered = append(filtered, c)
+			}
 		}
+		pool.readConnections = filtered
+	case *common.WriteConnection:
+		var filtered []*common.WriteConnection // == nil
+		for _, i := range pool.writeConnections {
+			if c != i {
+				filtered = append(filtered, c)
+			}
+		}
+		pool.writeConnections = filtered
+	default:
+		fmt.Println("Object is of unknown type")
 	}
-	pool.connections = filtered
+
 }
 
 // Shutdown close all connection in the pool
 func (pool *Pool) Shutdown() {
 	close(pool.done)
-	for _, conn := range pool.connections {
+	for _, conn := range pool.readConnections {
+		conn.Close()
+	}
+
+	for _, conn := range pool.writeConnections {
 		conn.Close()
 	}
 }
 
-// PoolSize represent the number of open connections per status
+// PoolSize represent the total number of connections and idle connections.
 type PoolSize struct {
-	connecting int
-	idle       int
-	running    int
-	total      int
-}
-
-func (poolSize *PoolSize) String() string {
-	return fmt.Sprintf("Connecting %d, idle %d, running %d, total %d", poolSize.connecting, poolSize.idle, poolSize.running, poolSize.total)
+	idle  int
+	total int
 }
 
 // Size return the current state of the pool
-func (pool *Pool) Size() (poolSize *PoolSize) {
-	poolSize = new(PoolSize)
-	poolSize.total = len(pool.connections)
-	for _, connection := range pool.connections {
-		switch connection.status {
-		case CONNECTING:
-			poolSize.connecting++
-		case IDLE:
-			poolSize.idle++
-		case RUNNING:
-			poolSize.running++
-		}
+func (pool *Pool) Size() (*PoolSize, *PoolSize) {
+	clientPoolSize := new(PoolSize)
+	clientPoolSize.total = len(pool.readConnections)
+	for _, connection := range pool.readConnections {
+		updateIdleConnCount(connection, clientPoolSize)
 	}
 
-	return
+	serverPoolSize := new(PoolSize)
+	serverPoolSize.total = len(pool.writeConnections)
+	for _, connection := range pool.writeConnections {
+		updateIdleConnCount(connection, serverPoolSize)
+	}
+
+	return clientPoolSize, serverPoolSize
+}
+
+func updateIdleConnCount(connection common.Connection, poolSize *PoolSize) {
+	switch connection.GetStatus() {
+	case common.IDLE:
+		poolSize.idle++
+	}
+}
+
+func (pool *Pool) GetHttpClient() *http.Client {
+	return pool.httpClient
+}
+
+func (pool *Pool) GetLock() *sync.RWMutex {
+	return &pool.lock
+}
+
+func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	connection, err := common.GetValueWithTimeout(pool.idle, pool.client.Config.GetTimeout())
+
+	if err == nil && connection.Take() {
+		return connection
+	}
+	return nil
 }

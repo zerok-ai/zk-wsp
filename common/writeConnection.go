@@ -1,4 +1,4 @@
-package server
+package common
 
 import (
 	"encoding/json"
@@ -14,25 +14,14 @@ import (
 	"github.com/zerok-ai/zk-wsp"
 )
 
-// ConnectionStatus is an enumeration type which represents the status of WebSocket connection.
-type ConnectionStatus int
-
-const (
-	// Idle state means it is opened but not working now.
-	// The default value for Connection is Idle, so it is ok to use zero-value(int: 0) for Idle status.
-	Idle ConnectionStatus = iota
-	Busy
-	Closed
-)
-
-// Connection manages a single websocket connection from the peer.
+// WriteConnection manages a single websocket connection from the peer.
 // wsp supports multiple connections from a single peer at the same time.
-type Connection struct {
-	pool      *Pool
+type WriteConnection struct {
+	pool      *ConnectionPool
 	ws        *websocket.Conn
-	status    ConnectionStatus
+	Status    int
 	idleSince time.Time
-	lock      sync.Mutex
+	lock      sync.RWMutex
 	// nextResponse is the channel of channel to wait an HTTP response.
 	//
 	// In advance, the `read` function waits to receive the HTTP response as a separate thread "reader".
@@ -48,26 +37,26 @@ type Connection struct {
 	nextResponse chan chan io.Reader
 }
 
-// NewConnection returns a new Connection.
-func NewConnection(pool *Pool, ws *websocket.Conn) *Connection {
-	// Initialize a new Connection
-	c := new(Connection)
-	c.pool = pool
-	c.ws = ws
+func (connection *WriteConnection) GetStatus() int {
+	return connection.Status
+}
+
+// NewWriteConnection returns a new WriteConnection.
+func NewWriteConnection(pool ConnectionPool, status int) *WriteConnection {
+	// Initialize a new WriteConnection
+	c := new(WriteConnection)
+	c.pool = &pool
 	c.nextResponse = make(chan chan io.Reader)
-	c.status = Idle
+	c.Status = status
 
 	// Mark that this connection is ready to use for relay
 	c.Release()
-
-	// Start to listen to incoming messages over the WebSocket connection
-	go c.read()
 
 	return c
 }
 
 // read the incoming message of the connection
-func (connection *Connection) read() {
+func (connection *WriteConnection) Start() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Websocket crash recovered : %s", r)
@@ -76,7 +65,7 @@ func (connection *Connection) read() {
 	}()
 
 	for {
-		if connection.status == Closed {
+		if connection.Status == CLOSED {
 			break
 		}
 
@@ -94,14 +83,14 @@ func (connection *Connection) read() {
 			break
 		}
 
-		if connection.status != Busy {
+		if connection.Status != BUSY {
 			// We received a wild unexpected message
 			break
 		}
 
 		// When it gets here, it is expected to be either a HttpResponse or a HttpResponseBody has been returned.
 		//
-		// Next, it waits to receive the value from the Connection.proxyRequest function that is invoked in the "server" thread.
+		// Next, it waits to receive the value from the WriteConnection.proxyRequest function that is invoked in the "server" thread.
 		// https://github.com/hgsgtk/wsp/blob/29cc73bbd67de18f1df295809166a7a5ef52e9fa/server/connection.go#L157
 		c := <-connection.nextResponse
 		if c == nil {
@@ -109,7 +98,7 @@ func (connection *Connection) read() {
 			break
 		}
 
-		// Send the reader back to Connection.proxyRequest
+		// Send the reader back to WriteConnection.proxyRequest
 		c <- reader
 
 		// Wait for proxyRequest to close the channel
@@ -119,8 +108,7 @@ func (connection *Connection) read() {
 }
 
 // Proxy a HTTP request through the Proxy over the websocket connection
-func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Request) (err error) {
-	log.Printf("proxy request to %s", connection.pool.id)
+func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.Request) (err error) {
 
 	// [1]: Serialize HTTP request
 	jsonReq, err := json.Marshal(wsp.SerializeHTTPRequest(r))
@@ -222,59 +210,72 @@ func (connection *Connection) proxyRequest(w http.ResponseWriter, r *http.Reques
 }
 
 // Take notifies that this connection is going to be used
-func (connection *Connection) Take() bool {
+func (connection *WriteConnection) Take() bool {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
 
-	if connection.status == Closed {
+	if connection.Status == CLOSED {
 		return false
 	}
 
-	if connection.status == Busy {
+	if connection.Status == BUSY {
 		return false
 	}
 
-	connection.status = Busy
+	connection.Status = BUSY
 	return true
 }
 
 // Release notifies that this connection is ready to use again
-func (connection *Connection) Release() {
+func (connection *WriteConnection) Release() {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
 
-	if connection.status == Closed {
+	if connection.Status == CLOSED {
 		return
 	}
 
 	connection.idleSince = time.Now()
-	connection.status = Idle
-
-	go connection.pool.Offer(connection)
+	connection.Status = IDLE
+	go (*connection.pool).Offer(connection)
 }
 
 // Close the connection
-func (connection *Connection) Close() {
+func (connection *WriteConnection) Close() {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
-
-	connection.close()
+	(*connection.pool).Remove(connection)
+	connection.CloseWithOutLock()
 }
 
 // Close the connection ( without lock )
-func (connection *Connection) close() {
-	if connection.status == Closed {
+func (connection *WriteConnection) CloseWithOutLock() {
+	if connection.Status == CLOSED {
 		return
 	}
 
-	log.Printf("Closing connection from %s", connection.pool.id)
-
 	// This one will be executed *before* lock.Unlock()
-	defer func() { connection.status = Closed }()
+	defer func() { connection.Status = CLOSED }()
 
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)
 
 	// Close the underlying TCP connection
 	connection.ws.Close()
+}
+
+func (connection *WriteConnection) GetWs() *websocket.Conn {
+	return connection.ws
+}
+
+func (connection *WriteConnection) SetWs(conn *websocket.Conn) {
+	connection.ws = conn
+}
+
+func (connection *WriteConnection) GetLock() *sync.RWMutex {
+	return &connection.lock
+}
+
+func (connection *WriteConnection) IdleSince() time.Time {
+	return connection.idleSince
 }

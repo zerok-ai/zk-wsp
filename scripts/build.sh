@@ -1,5 +1,7 @@
 #!/bin/bash
 
+THIS_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+export ROOT_DIR="$(dirname "$THIS_DIR")"
 
 LOCATION="us-west1"
 PROJECT_ID="zerok-dev"
@@ -29,16 +31,15 @@ variable=$1
 # Check the value of the variable
 if [ "$variable" == "server" ]; then
     echo "Building wsp server"
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_server cmd/wsp_server/main.go
-    docker build . -t "$SERVER_IMG" --build-arg APP_FILE=wsp_server
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$ROOT_DIR"/wsp_server "$ROOT_DIR"/cmd/wsp_server/main.go
+    docker build  -f "$ROOT_DIR/Dockerfile" . -t "$SERVER_IMG" --build-arg APP_FILE="$ROOT_DIR"/wsp_server
     docker push "$SERVER_IMG"
 elif [ "$variable" == "client" ]; then
     echo "Building wsp client"
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
-    docker build . -t "$CLIENT_IMG" --build-arg APP_FILE=wsp_client
+    echo $ROOT_DIR
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$ROOT_DIR"/wsp_client "$ROOT_DIR"/cmd/wsp_client/main.go
+    docker build -t "$CLIENT_IMG" -f "$ROOT_DIR/Dockerfile" . --build-arg APP_FILE="$ROOT_DIR"/wsp_client
     docker push "$CLIENT_IMG"
 else
     echo "Variable is neither server nor client"
 fi
-
-

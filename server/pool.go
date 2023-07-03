@@ -1,41 +1,44 @@
 package server
 
 import (
+	"fmt"
+	"github.com/zerok-ai/zk-wsp/common"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-// Pool handles all connections from the peer.
+// Pool handles all writeConnections from the peer.
 type Pool struct {
-	server *Server
-	id     PoolID
+	server   *Server
+	clientId string
 
-	size int
+	idleSize   int
+	httpClient *http.Client
 
-	connections []*Connection
-	idle        chan *Connection
+	writeConnections []*common.WriteConnection
+	readConnections  []*common.ReadConnection
+	idle             chan *common.WriteConnection
 
 	done bool
 	lock sync.RWMutex
 }
 
-// PoolID represents the identifier of the connected WebSocket client.
-type PoolID string
-
 // NewPool creates a new Pool
-func NewPool(server *Server, id PoolID) *Pool {
+func NewPool(server *Server, id string) *Pool {
 	p := new(Pool)
 	p.server = server
-	p.id = id
-	p.idle = make(chan *Connection)
+	p.clientId = id
+	p.idle = make(chan *common.WriteConnection)
+	p.httpClient = &http.Client{}
 	return p
 }
 
-// Register creates a new Connection and adds it to the pool
-func (pool *Pool) Register(ws *websocket.Conn) {
+// AddConnection adds a new connection to the pool
+func (pool *Pool) AddConnection(ws *websocket.Conn, connectionType common.ConnectionType) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 
@@ -44,16 +47,25 @@ func (pool *Pool) Register(ws *websocket.Conn) {
 		return
 	}
 
-	log.Printf("Registering new connection from %s", pool.id)
-	connection := NewConnection(pool, ws)
-	pool.connections = append(pool.connections, connection)
+	log.Printf("Adding new connection to pool from %s and type %d.\n", pool.clientId, connectionType)
+	switch connectionType {
+	case common.Read:
+		connection := common.NewReadConnection(pool, common.IDLE)
+		connection.SetWs(ws)
+		pool.readConnections = append(pool.readConnections, connection)
+		go connection.Start()
+	case common.Write:
+		connection := common.NewWriteConnection(pool, common.IDLE)
+		connection.SetWs(ws)
+		pool.writeConnections = append(pool.writeConnections, connection)
+		go connection.Start()
+	default:
+		fmt.Println("Object is of unknown type")
+	}
 }
 
 // Offer offers an idle connection to the server.
-func (pool *Pool) Offer(connection *Connection) {
-	// The original code of root-gg/wsp was invoking goroutine,
-	// but the callder was also invoking goroutine,
-	// so it was deemed unnecessary and removed.
+func (pool *Pool) Offer(connection *common.WriteConnection) {
 	pool.idle <- connection
 }
 
@@ -62,28 +74,30 @@ func (pool *Pool) Offer(connection *Connection) {
 // This MUST be surrounded by pool.lock.Lock()
 func (pool *Pool) Clean() {
 	idle := 0
-	var connections []*Connection
+	for _, connection := range pool.readConnections {
+		idle = pool.CleanConnection(connection, idle)
+	}
 
-	for _, connection := range pool.connections {
-		// We need to be sur we'll never close a BUSY or soon to be BUSY connection
-		connection.lock.Lock()
-		if connection.status == Idle {
-			idle++
-			if idle > pool.size {
-				// We have enough idle connections in the pool.
-				// Terminate the connection if it is idle since more that IdleTimeout
-				if int(time.Now().Sub(connection.idleSince).Seconds())*1000 > pool.server.Config.IdleTimeout {
-					connection.close()
-				}
+	idle = 0
+	for _, connection := range pool.writeConnections {
+		idle = pool.CleanConnection(connection, idle)
+	}
+}
+
+func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
+	lock := connection.GetLock()
+	lock.Lock()
+	if connection.GetStatus() == common.IDLE {
+		idle++
+		if idle > pool.idleSize {
+			if int(time.Now().Sub(connection.IdleSince()).Seconds())*1000 > pool.server.Config.IdleTimeout {
+				connection.CloseWithOutLock()
+				pool.Remove(connection)
 			}
 		}
-		connection.lock.Unlock()
-		if connection.status == Closed {
-			continue
-		}
-		connections = append(connections, connection)
 	}
-	pool.connections = connections
+	lock.Unlock()
+	return idle
 }
 
 // IsEmpty clean the pool and return true if the pool is empty
@@ -92,44 +106,69 @@ func (pool *Pool) IsEmpty() bool {
 	defer pool.lock.Unlock()
 
 	pool.Clean()
-	return len(pool.connections) == 0
+	return len(pool.writeConnections) == 0 && len(pool.readConnections) == 0
 }
 
-// Shutdown closes every connections in the pool and cleans it
+// Shutdown closes every writeConnections in the pool and cleans it
 func (pool *Pool) Shutdown() {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 
 	pool.done = true
 
-	for _, connection := range pool.connections {
+	for _, connection := range pool.writeConnections {
 		connection.Close()
 	}
+
+	for _, connection := range pool.readConnections {
+		connection.Close()
+	}
+
 	pool.Clean()
 }
 
-// PoolSize is the number of connection in each state in the pool
-type PoolSize struct {
-	Idle   int
-	Busy   int
-	Closed int
+func (pool *Pool) GetHttpClient() *http.Client {
+	return pool.httpClient
 }
 
-// Size return the number of connection in each state in the pool
-func (pool *Pool) Size() (ps *PoolSize) {
+func (pool *Pool) GetLock() *sync.RWMutex {
+	return &pool.lock
+}
+
+// Remove a connection from the pool
+func (pool *Pool) Remove(conn common.Connection) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-
-	ps = new(PoolSize)
-	for _, connection := range pool.connections {
-		if connection.status == Idle {
-			ps.Idle++
-		} else if connection.status == Busy {
-			ps.Busy++
-		} else if connection.status == Closed {
-			ps.Closed++
+	switch c := (conn).(type) {
+	case *common.ReadConnection:
+		var filtered []*common.ReadConnection // == nil
+		for _, i := range pool.readConnections {
+			if c != i {
+				filtered = append(filtered, c)
+			}
 		}
+		pool.readConnections = filtered
+	case *common.WriteConnection:
+		var filtered []*common.WriteConnection // == nil
+		for _, i := range pool.writeConnections {
+			if c != i {
+				filtered = append(filtered, c)
+			}
+		}
+		pool.writeConnections = filtered
+	default:
+		fmt.Println("Object is of unknown type")
 	}
 
-	return
+}
+
+func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	connection, err := common.GetValueWithTimeout(pool.idle, pool.server.Config.GetTimeout())
+
+	if err == nil && connection.Take() {
+		return connection
+	}
+	return nil
 }
