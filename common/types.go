@@ -27,6 +27,7 @@ const (
 
 // Status of a Connection
 const (
+	// CONNECTING is only used for the client connections.
 	CONNECTING = iota
 	IDLE
 	BUSY

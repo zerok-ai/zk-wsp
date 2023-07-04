@@ -31,7 +31,7 @@ func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 	pool.target = target
 	pool.readConnections = make([]*common.ReadConnection, 0)
 	pool.writeConnections = make([]*common.WriteConnection, 0)
-	pool.idle = make(chan *common.WriteConnection)
+	pool.idle = make(chan *common.WriteConnection, client.Config.PoolMaxSize)
 	pool.secretKey = secretKey
 	pool.done = make(chan struct{})
 	return
@@ -41,7 +41,7 @@ func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
 func (pool *Pool) Start(ctx context.Context) {
 	pool.connector(ctx)
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
 	L:
@@ -65,21 +65,21 @@ func (pool *Pool) connector(ctx context.Context) {
 
 	toCreateRead := pool.connectionsToCreate(readPoolSize)
 
+	fmt.Printf("Creating %v read connections.\n", toCreateRead)
+
 	pool.createConnections(ctx, toCreateRead, common.Read)
 
 	toCreateWrite := pool.connectionsToCreate(writePoolSize)
+
+	fmt.Printf("Creating %v write connections.\n", toCreateWrite)
 
 	pool.createConnections(ctx, toCreateWrite, common.Write)
 }
 
 func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
+	//TODO: Here some connecting might be connecting state, we have to consider them.
 	// Create enough connection to fill the pool
 	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
-
-	// Create only one connection if the pool is empty
-	if poolSize.total == 0 {
-		toCreate = 1
-	}
 
 	// Ensure to open at most PoolMaxSize readConnections
 	if poolSize.total+toCreate > pool.client.Config.PoolMaxSize {
@@ -127,6 +127,7 @@ func (pool *Pool) add(conn common.Connection) {
 // Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *common.WriteConnection) {
 	pool.idle <- connection
+	fmt.Println("Idle channel length is ", len(pool.idle))
 }
 
 // Remove a connection from the pool
@@ -192,6 +193,8 @@ func (pool *Pool) Size() (*PoolSize, *PoolSize) {
 func updateIdleConnCount(connection common.Connection, poolSize *PoolSize) {
 	switch connection.GetStatus() {
 	case common.IDLE:
+		poolSize.idle++
+	case common.CONNECTING:
 		poolSize.idle++
 	}
 }

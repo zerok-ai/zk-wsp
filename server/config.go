@@ -15,6 +15,7 @@ type Config struct {
 	Timeout     int    `yaml:"timeout"`
 	IdleTimeout int    `yaml:"idleTimeout"`
 	SecretKey   string `yaml:"secretKey"`
+	PoolMaxSize int    `yaml:"poolMaxSize"`
 }
 
 // GetAddr returns the address to specify a HTTP server address
@@ -24,7 +25,7 @@ func (c Config) GetAddr() string {
 
 // GetTimeout returns the time.Duration converted to millisecond
 func (c Config) GetTimeout() time.Duration {
-	return time.Duration(c.Timeout) * time.Millisecond
+	return time.Duration(c.Timeout) * time.Second
 }
 
 // NewConfig creates a new ProxyConfig

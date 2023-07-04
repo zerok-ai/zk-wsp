@@ -32,7 +32,7 @@ func NewPool(server *Server, id string) *Pool {
 	p := new(Pool)
 	p.server = server
 	p.clientId = id
-	p.idle = make(chan *common.WriteConnection)
+	p.idle = make(chan *common.WriteConnection, server.Config.PoolMaxSize)
 	p.httpClient = &http.Client{}
 	return p
 }
@@ -67,6 +67,7 @@ func (pool *Pool) AddConnection(ws *websocket.Conn, connectionType common.Connec
 // Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *common.WriteConnection) {
 	pool.idle <- connection
+	fmt.Println("Idle channel length is ", len(pool.idle))
 }
 
 // Clean removes dead connection from the pool
@@ -90,7 +91,8 @@ func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 	if connection.GetStatus() == common.IDLE {
 		idle++
 		if idle > pool.idleSize {
-			if int(time.Now().Sub(connection.IdleSince()).Seconds())*1000 > pool.server.Config.IdleTimeout {
+			if int(time.Now().Sub(connection.IdleSince()).Seconds()) > pool.server.Config.IdleTimeout {
+				//TODO: Send a message on the websocket before closing the connection. Or should we move the closing connections code to the client?
 				connection.CloseWithOutLock()
 				pool.Remove(connection)
 			}
