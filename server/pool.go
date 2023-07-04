@@ -92,7 +92,12 @@ func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 		idle++
 		if idle > pool.idleSize {
 			if int(time.Now().Sub(connection.IdleSince()).Seconds()) > pool.server.Config.IdleTimeout {
-				//TODO: Send a message on the websocket before closing the connection. Or should we move the closing connections code to the client?
+				switch connection.(type) {
+				case *common.ReadConnection:
+					fmt.Println("Closing connection due to timeout and connType read")
+				case *common.WriteConnection:
+					fmt.Println("Closing connection due to timeout and connType write")
+				}
 				connection.CloseWithOutLock()
 				pool.Remove(connection)
 			}

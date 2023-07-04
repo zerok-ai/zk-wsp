@@ -138,7 +138,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	// Parse the greeting message
 	split := strings.Split(string(greeting), "_")
 	clientId := split[0]
-	fmt.Println("Clientid is ", clientId)
+
 	idleSize, err := strconv.Atoi(split[1])
 	if err != nil {
 		wsp.ProxyErrorf(w, "Unable to parse greeting message : %s", err)
@@ -152,10 +152,14 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Clientid is ", clientId, "idleSize is ", idleSize, "connectionType is ", connectionType)
+
 	// 3. Register the connection into server pools.
 	// s.lock is for exclusive control of pools operation.
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
+	fmt.Println("Executing next line after lock.")
 
 	var pool *Pool
 	// There is no need to create a new pool,
@@ -176,6 +180,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Add the WebSocket connection to the pool
 	pool.AddConnection(ws, common.ConnectionType(connectionType))
+	fmt.Println("Adding connection done.")
 }
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +188,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) clean() {
-	//fmt.Println("Cleaning empty connections.")
+	fmt.Println("Cleaning empty connections.")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -202,6 +207,7 @@ func (s *Server) clean() {
 	}
 
 	s.pools = pools
+	fmt.Println("Done with cleaning empty connections.")
 }
 
 // Shutdown stop the Server

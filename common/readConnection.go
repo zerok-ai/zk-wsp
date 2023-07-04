@@ -63,6 +63,7 @@ func (connection *ReadConnection) Start() {
 		// Read request
 		connection.Status = IDLE
 		_, jsonRequest, err := connection.ws.ReadMessage()
+		fmt.Println(" Received request.")
 		if err != nil {
 			log.Println("Unable to read request", err)
 			break
@@ -77,6 +78,7 @@ func (connection *ReadConnection) Start() {
 			connection.error(fmt.Sprintf("Unable to deserialize json http request : %s\n", err))
 			break
 		}
+		fmt.Println("Created http request.")
 
 		req, err := wsp.UnserializeHTTPRequest(httpRequest)
 		if err != nil {
@@ -93,6 +95,7 @@ func (connection *ReadConnection) Start() {
 			break
 		}
 		req.Body = io.NopCloser(bodyReader)
+		fmt.Println("Received request body.")
 
 		// Execute request
 		httpClient := (*connection.pool).GetHttpClient()
@@ -104,6 +107,7 @@ func (connection *ReadConnection) Start() {
 			}
 			continue
 		}
+		fmt.Println("Done executing request.")
 
 		// Serialize response
 		jsonResponse, err := json.Marshal(wsp.SerializeHTTPResponse(resp))
@@ -115,6 +119,7 @@ func (connection *ReadConnection) Start() {
 			continue
 		}
 
+		fmt.Println("Writing response.")
 		// Write response
 		err = connection.ws.WriteMessage(websocket.TextMessage, jsonResponse)
 		if err != nil {
@@ -122,6 +127,7 @@ func (connection *ReadConnection) Start() {
 			break
 		}
 
+		fmt.Println("Writing response body.")
 		// Pipe response body
 		bodyWriter, err := connection.ws.NextWriter(websocket.BinaryMessage)
 		if err != nil {
@@ -133,7 +139,10 @@ func (connection *ReadConnection) Start() {
 			log.Printf("Unable to get pipe response body : %v", err)
 			break
 		}
-		bodyWriter.Close()
+		err = bodyWriter.Close()
+		if err != nil {
+			fmt.Println("Error while closing bodyWriter in read connection : ", err)
+		}
 	}
 }
 
@@ -169,8 +178,9 @@ func (connection *ReadConnection) error(msg string) (err error) {
 	return
 }
 
-// Close close the ws/tcp connection and remove it from the pool
+// Close the ws/tcp connection and remove it from the pool
 func (connection *ReadConnection) Close() {
+
 	lock := (*connection.pool).GetLock()
 	lock.Lock()
 	defer lock.Unlock()
@@ -178,8 +188,15 @@ func (connection *ReadConnection) Close() {
 }
 
 func (connection *ReadConnection) CloseWithOutLock() {
+	if connection.Status == CLOSED {
+		return
+	}
+	defer func() { connection.Status = CLOSED }()
 	(*connection.pool).Remove(connection)
-	connection.ws.Close()
+	err := connection.ws.Close()
+	if err != nil {
+		fmt.Println("Error while closing read connection : ", err)
+	}
 }
 
 func (connection *ReadConnection) GetWs() *websocket.Conn {
