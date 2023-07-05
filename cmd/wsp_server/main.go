@@ -11,13 +11,13 @@ import (
 )
 
 func main() {
-	var config server.Config
-	if err := utils.ProcessArgs(&config); err != nil {
+	config := server.NewConfig()
+	if err := utils.ProcessArgs(config); err != nil {
 		fmt.Println("Unable to process wsp server config. Stopping wsp server.")
 		return
 	}
 
-	wspServer := server.NewServer(&config)
+	wspServer := server.NewServer(config)
 	wspServer.Start()
 
 	// Wait signals

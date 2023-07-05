@@ -46,7 +46,12 @@ func NewReadConnection(pool ConnectionPool, status int) *ReadConnection {
 // There is no buffering of HTTP request/response body
 // If any error occurs the connection is closed/throwed
 func (connection *ReadConnection) Start() {
-	defer connection.Close()
+	defer func() {
+		fmt.Println("Read connection ending.")
+		connection.Close()
+	}()
+
+	fmt.Println("Read connection starting.")
 
 	// Keep connection alive
 	go func() {

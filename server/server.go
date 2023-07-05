@@ -152,7 +152,14 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Clientid is ", clientId, "idleSize is ", idleSize, "connectionType is ", connectionType)
+	random, err := strconv.Atoi(split[3])
+	if err != nil {
+		wsp.ProxyErrorf(w, "Unable to parse greeting message : %s", err)
+		ws.Close()
+		return
+	}
+
+	fmt.Println("Clientid is ", clientId, "idleSize is ", idleSize, "connectionType is ", connectionType, "random is ", random)
 
 	// 3. Register the connection into server pools.
 	// s.lock is for exclusive control of pools operation.
@@ -188,7 +195,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) clean() {
-	fmt.Println("Cleaning empty connections.")
+	//fmt.Println("Cleaning empty connections.")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -207,7 +214,7 @@ func (s *Server) clean() {
 	}
 
 	s.pools = pools
-	fmt.Println("Done with cleaning empty connections.")
+	//fmt.Println("Done with cleaning empty connections.")
 }
 
 // Shutdown stop the Server

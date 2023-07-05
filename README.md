@@ -47,7 +47,7 @@ make uninstall-server
 Refer to the example below sending request to server from the client cluster. Please note that the client id here is the clusterId on zerok.
 
 ```
-curl -H 'X-PROXY-DESTINATION: http://localhost:8091/hello' -H 'X-CLIENT-ID: 9e7f784c-b453-4ef4-61f4-dc389dd0bbe1' http://127.0.0.1:8989/request
+curl -H 'X-PROXY-DESTINATION: http://localhost:8091/hello' -H 'X-CLIENT-ID: 3bd0e8cc-75c2-4e32-6db2-8c1971c1e824' http://127.0.0.1:8989/request
 ```
 
 For sending request to client from the server cluster:

@@ -65,13 +65,17 @@ func (pool *Pool) connector(ctx context.Context) {
 
 	toCreateRead := pool.connectionsToCreate(readPoolSize)
 
-	fmt.Printf("Creating %v read connections.\n", toCreateRead)
+	if toCreateRead > 0 {
+		fmt.Printf("Creating %v read connections.\n", toCreateRead)
+	}
 
 	pool.createConnections(ctx, toCreateRead, common.Read)
 
 	toCreateWrite := pool.connectionsToCreate(writePoolSize)
 
-	fmt.Printf("Creating %v write connections.\n", toCreateWrite)
+	if toCreateWrite > 0 {
+		fmt.Printf("Creating %v write connections.\n", toCreateWrite)
+	}
 
 	pool.createConnections(ctx, toCreateWrite, common.Write)
 }
@@ -103,13 +107,11 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		default:
 			fmt.Println("Object is of unknown type")
 		}
-		go func() {
-			err := Connect(interfaceConn, ctx, pool, connType)
-			if err != nil {
-				fmt.Println("Error while creating connection type ", connType, " error is ", err)
-				return
-			}
-		}()
+		err := Connect(interfaceConn, ctx, pool, connType)
+		if err != nil {
+			fmt.Println("Error while creating connection type ", connType, " error is ", err)
+			return
+		}
 	}
 }
 

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -39,7 +38,7 @@ func NewConfig() (config *Config) {
 		panic(err)
 	}
 	config.ID = id.String()
-	fmt.Println("Client id is ", config.ID)
+	//fmt.Println("Client id is ", config.ID)
 
 	config.Targets = []string{"ws://127.0.0.1:8080/register"}
 	//TODO: We need to create separate pool size for client and server.
