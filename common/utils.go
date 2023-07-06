@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,11 +35,6 @@ func GetDestinationUrl(w http.ResponseWriter, r *http.Request) (*url.URL, error)
 		return nil, fmt.Errorf("unable to parse X-PROXY-DESTINATION header")
 	}
 	return URL, nil
-}
-
-func GenerateRandomNumber(min, max int) int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max-min+1) + min
 }
 
 // TODO: Can we move this method and other methods in zk-operator k8sutils to utils-go?

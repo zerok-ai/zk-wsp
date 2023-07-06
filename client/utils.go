@@ -56,11 +56,9 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 		return err
 	}
 
-	rand := common.GenerateRandomNumber(1, 1000)
-
 	conn.SetWs(ws)
 
-	log.Printf("Connected to %s and type %v and random %v", pool.Target, connectionType, rand)
+	log.Printf("Connected to %s and type %v", pool.Target, connectionType)
 
 	var serverConnType common.ConnectionType
 
@@ -75,11 +73,9 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 
 	// Send the greeting message with proxy id and wanted pool size.
 	greeting := fmt.Sprintf(
-		"%s_%d_%d_%d",
-		pool.client.Config.ID,
+		"%d_%d",
 		pool.client.Config.PoolIdleSize,
 		serverConnType,
-		rand,
 	)
 
 	if err := ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
