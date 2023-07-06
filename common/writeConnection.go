@@ -60,6 +60,7 @@ func (connection *WriteConnection) Start() {
 		if r := recover(); r != nil {
 			log.Printf("Write connection crash recovered : %s", r)
 		}
+		fmt.Println("Write connection ending.")
 		connection.Close()
 	}()
 
@@ -241,7 +242,7 @@ func (connection *WriteConnection) Release() {
 
 	connection.idleSince = time.Now()
 	connection.Status = IDLE
-	go (*connection.pool).Offer(connection)
+	(*connection.pool).Offer(connection)
 }
 
 // Close the connection

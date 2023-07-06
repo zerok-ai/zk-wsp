@@ -32,6 +32,8 @@ func NewPool(server *Server, id string) *Pool {
 	p := new(Pool)
 	p.server = server
 	p.clientId = id
+	p.readConnections = make([]*common.ReadConnection, 0)
+	p.writeConnections = make([]*common.WriteConnection, 0)
 	p.idle = make(chan *common.WriteConnection, server.Config.PoolMaxSize)
 	p.httpClient = &http.Client{}
 	return p

@@ -172,7 +172,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	// There is no need to create a new pool,
 	// if it is already registered in current pools.
 	for _, p := range s.pools {
-		if p.clientId == secretKey {
+		if p.clientId == clientId {
 			pool = p
 			break
 		}
