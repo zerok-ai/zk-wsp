@@ -3,8 +3,9 @@ data:
   wsp-config.yaml: |+
     host: 0.0.0.0
     port: 8989
-    timeout: 3000
-    idleTimeout: 6000
+    timeout: 30
+    idleTimeout: 1800
+    poolMaxSize: 100
 kind: ConfigMap
 metadata:
   name: zk-wsp-server-configmap

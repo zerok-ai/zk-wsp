@@ -1,12 +1,13 @@
 apiVersion: v1
 data:
   wsp-config.yaml: |+
+    id: 123
     host: 127.0.0.1
     port : 8987
     timeout : 3000
     targets:
       - ws://api.avinpx07.getanton.com:80/register
-    poolidlesize: 1
+    poolidlesize: 5
     poolmaxsize: 100
 kind: ConfigMap
 metadata:
