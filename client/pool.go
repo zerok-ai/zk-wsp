@@ -12,7 +12,7 @@ import (
 // Pool manage a pool of connection to a remote Server
 type Pool struct {
 	client           *Client
-	target           string
+	Target           *TargetConfig
 	secretKey        string
 	httpClient       *http.Client
 	readConnections  []*common.ReadConnection
@@ -24,11 +24,11 @@ type Pool struct {
 }
 
 // NewPool creates a new Pool
-func NewPool(client *Client, target string, secretKey string) (pool *Pool) {
+func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool) {
 	pool = new(Pool)
 	pool.client = client
 	pool.httpClient = client.client
-	pool.target = target
+	pool.Target = target
 	pool.readConnections = make([]*common.ReadConnection, 0)
 	pool.writeConnections = make([]*common.WriteConnection, 0)
 	pool.idle = make(chan *common.WriteConnection, client.Config.PoolMaxSize)

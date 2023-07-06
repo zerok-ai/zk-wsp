@@ -12,7 +12,7 @@ import (
 func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType) error {
 	err := connectInternal(ctx, interfaceConn, pool, connType)
 	if err != nil {
-		log.Printf("Unable to connect to %s : %s", pool.target, err)
+		log.Printf("Unable to connect to %s : %s", pool.Target, err)
 		//Removing the connection from pool since there is a connection error.
 		pool.Remove(interfaceConn)
 		return err
@@ -23,24 +23,44 @@ func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, c
 
 // Connect to the IsolatorServer using a HTTP websocket
 func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType) (err error) {
-	log.Printf("Connecting to %s and type %v", pool.target, connectionType)
+	if pool == nil {
+		log.Printf("Aborting connection since pool is nil.")
+	}
+
+	log.Printf("Connecting to %s and type %v", pool.Target, connectionType)
+
+	targetConfig := pool.Target
+
+	clusterKey, err := common.GetSecretValue(targetConfig.ClusterKeyNamespace, targetConfig.ClusterSecretName, targetConfig.ClusterKeyData)
+
+	if err != nil {
+		fmt.Println("Error while getting cluster key for ws connection to server", err, connectionType)
+		return err
+	}
 
 	// Create a new TCP(/TLS) connection ( no use of net.http )
-	ws, _, err := pool.client.dialer.DialContext(
+	ws, response, err := pool.client.dialer.DialContext(
 		ctx,
-		pool.target,
-		http.Header{"X-SECRET-KEY": {pool.secretKey}},
+		targetConfig.URL,
+		http.Header{"X-SECRET-KEY": {clusterKey}},
 	)
+
+	if response != nil && response.StatusCode == InvalidClusterKeyResponseCode {
+		fmt.Println("Invalid cluster key")
+		//TODO Add code the handle invalid cluster key error.
+		return InvalidClusterKey
+	}
 
 	if err != nil {
 		fmt.Println("Error while establishing websocket connection to server", err, connectionType)
 		return err
 	}
+
 	rand := common.GenerateRandomNumber(1, 1000)
 
 	conn.SetWs(ws)
 
-	log.Printf("Connected to %s and type %v and random %v", pool.target, connectionType, rand)
+	log.Printf("Connected to %s and type %v and random %v", pool.Target, connectionType, rand)
 
 	var serverConnType common.ConnectionType
 

@@ -3,6 +3,10 @@ host : 127.0.0.1                    # Address to bind the HTTP server
 port : 8987                          # Port to bind the HTTP server
 timeout : 3000
 targets:
-  - ws://localhost:8989/register
+    - url: ws://localhost:8989/register
+      clusterSecretName: cluster-info
+      clusterKeyData: clusterKey
+      clusterKeyNamespace: zk-client
+      maxRetries: 3
 poolIdleSize: 5
 poolMaxSize: 100

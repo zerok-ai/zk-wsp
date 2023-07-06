@@ -39,7 +39,7 @@ func NewClient(config *Config) (c *Client) {
 func (c *Client) Start(ctx context.Context) {
 	for _, target := range c.Config.Targets {
 		pool := NewPool(c, target, c.Config.SecretKey)
-		c.pools[target] = pool
+		c.pools[target.URL] = pool
 		go pool.Start(ctx)
 	}
 	r := http.NewServeMux()

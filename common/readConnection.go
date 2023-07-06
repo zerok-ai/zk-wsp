@@ -53,6 +53,7 @@ func (connection *ReadConnection) Start() {
 
 	fmt.Println("Read connection starting.")
 
+	//TODO: Should this only be sent from client conns or even server conns?
 	// Keep connection alive
 	go func() {
 		for {
