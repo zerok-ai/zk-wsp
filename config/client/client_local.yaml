@@ -10,3 +10,4 @@ targets:
       maxRetries: 3
 poolIdleSize: 5
 poolMaxSize: 100
+secret : 1234567890

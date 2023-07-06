@@ -1,12 +1,10 @@
 package client
 
 import (
-	"os"
 	"strconv"
 	"time"
 
 	uuid "github.com/nu7hatch/gouuid"
-	"gopkg.in/yaml.v2"
 )
 
 // Config configures an Proxy
@@ -27,6 +25,7 @@ type TargetConfig struct {
 	ClusterKeyData      string `yaml:"clusterKeyData"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 	MaxRetries          int    `yaml:"maxRetries"`
+	SecretKey           string `yaml:"secretKey"`
 }
 
 func (c Config) GetTimeout() time.Duration {
@@ -48,27 +47,10 @@ func NewConfig() (config *Config) {
 	config.ID = id.String()
 	//fmt.Println("Client id is ", config.ID)
 
-	config.Targets = []*TargetConfig{&TargetConfig{URL: "ws://127.0.0.1:8080/register"}}
+	config.Targets = []*TargetConfig{&TargetConfig{URL: "ws://127.0.0.1:8080/register", SecretKey: ""}}
 	//TODO: We need to create separate pool size for write and read conns.
 	config.PoolIdleSize = 10
 	config.PoolMaxSize = 100
-
-	return
-}
-
-// LoadConfiguration loads configuration from a YAML file
-func LoadConfiguration(path string) (config *Config, err error) {
-	config = NewConfig()
-
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-
-	err = yaml.Unmarshal(bytes, config)
-	if err != nil {
-		return
-	}
 
 	return
 }

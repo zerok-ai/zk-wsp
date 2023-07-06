@@ -31,7 +31,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 
 	targetConfig := pool.Target
 
-	clusterKey, err := common.GetSecretValue(targetConfig.ClusterKeyNamespace, targetConfig.ClusterSecretName, targetConfig.ClusterKeyData)
+	secretKey := targetConfig.SecretKey
 
 	if err != nil {
 		fmt.Println("Error while getting cluster key for ws connection to server", err, connectionType)
@@ -42,7 +42,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	ws, response, err := pool.client.dialer.DialContext(
 		ctx,
 		targetConfig.URL,
-		http.Header{"X-SECRET-KEY": {clusterKey}},
+		http.Header{"X-SECRET-KEY": {secretKey}},
 	)
 
 	if response != nil && response.StatusCode == InvalidClusterKeyResponseCode {
