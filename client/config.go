@@ -3,13 +3,10 @@ package client
 import (
 	"strconv"
 	"time"
-
-	uuid "github.com/nu7hatch/gouuid"
 )
 
 // Config configures an Proxy
 type Config struct {
-	ID           string          `yaml:"id"`
 	Targets      []*TargetConfig `yaml:"targets"`
 	PoolIdleSize int             `yaml:"poolIdleSize"`
 	PoolMaxSize  int             `yaml:"poolMaxSize"`
@@ -39,12 +36,6 @@ func (c Config) GetAddr() string {
 // NewConfig creates a new ProxyConfig
 func NewConfig() (config *Config) {
 	config = new(Config)
-
-	id, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-	config.ID = id.String()
 	//fmt.Println("Client id is ", config.ID)
 
 	config.Targets = []*TargetConfig{&TargetConfig{URL: "ws://127.0.0.1:8080/register", SecretKey: ""}}
