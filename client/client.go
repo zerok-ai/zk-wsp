@@ -18,10 +18,11 @@ type Client struct {
 	dialer *websocket.Dialer
 
 	//This map contains pool for each target Id.
-	pools      map[string]*Pool
+	pool       *Pool
 	lock       sync.RWMutex
 	done       chan struct{}
 	httpServer *http.Server
+	ready      bool
 }
 
 // NewClient creates a new Client.
@@ -30,26 +31,38 @@ func NewClient(config *Config) (c *Client) {
 	c.Config = config
 	c.client = &http.Client{}
 	c.dialer = &websocket.Dialer{}
-	c.pools = make(map[string]*Pool)
 	c.done = make(chan struct{})
+	c.ready = false
 	return
 }
 
 // Start the Proxy
 func (c *Client) Start(ctx context.Context) {
-	for _, target := range c.Config.Targets {
-		pool := NewPool(c, target, c.Config.SecretKey)
-		c.pools[target.URL] = pool
-		go pool.Start(ctx)
-	}
+	target := c.Config.Target
+	pool := NewPool(c, target, c.Config.SecretKey)
+	c.pool = pool
+	pool.Start(ctx)
+
 	r := http.NewServeMux()
+	//TODO: Validate the request method here.
 	r.HandleFunc("/request", c.Request)
+	r.HandleFunc("/status", c.Status)
 
 	c.httpServer = &http.Server{
 		Addr:    c.Config.GetAddr(),
 		Handler: r,
 	}
 	go func() { log.Fatal(c.httpServer.ListenAndServe()) }()
+}
+
+func (c *Client) Status(w http.ResponseWriter, r *http.Request) {
+	if c.ready {
+		w.WriteHeader(200)
+		w.Write([]byte("OK"))
+	} else {
+		w.WriteHeader(503)
+		w.Write([]byte("Wsp Client Not Ready."))
+	}
 }
 
 func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
@@ -61,30 +74,12 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 	}
 	r.URL = URL
 
-	targetId := r.Header.Get("X-TARGET-ID")
-	if targetId == "" {
-		//Scenario where there is only one target.
-		if len(c.pools) == 1 {
-			for key := range c.pools {
-				targetId = key
-				break
-			}
-		} else {
-			wsp.ProxyErrorf(w, "Missing X-TARGET-ID header")
-			return
-		}
-	}
-
-	log.Printf("[%s] %s %s", r.Method, r.URL.String(), targetId)
-
-	pool := c.pools[targetId]
-
-	if pool == nil {
+	if c.pool == nil {
 		wsp.ProxyErrorf(w, "No pool available for the target client.")
 		return
 	}
 
-	connection := pool.GetIdleWriteConnection()
+	connection := c.pool.GetIdleWriteConnection()
 
 	if connection == nil {
 		// It means that dispatcher has set `nil` which is a system error case that is
@@ -107,7 +102,5 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 
 // Shutdown the Proxy
 func (c *Client) Shutdown() {
-	for _, pool := range c.pools {
-		pool.Shutdown()
-	}
+	c.pool.Shutdown()
 }

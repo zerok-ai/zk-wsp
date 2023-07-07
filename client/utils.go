@@ -47,7 +47,6 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 
 	if response != nil && response.StatusCode == InvalidClusterKeyResponseCode {
 		fmt.Println("Invalid cluster key")
-		//TODO Add code the handle invalid cluster key error.
 		return InvalidClusterKey
 	}
 

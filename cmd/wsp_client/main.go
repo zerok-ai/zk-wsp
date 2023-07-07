@@ -21,15 +21,13 @@ func main() {
 	}
 
 	//If secretKey is not provided in config, get it from cluster secrets.
-	for _, target := range config.Targets {
-		if target.SecretKey == "" {
-			fmt.Println("SecretKey is empty. Getting from secret in cluster.")
-			var err1 error
-			target.SecretKey, err1 = common.GetSecretValue(target.ClusterKeyNamespace, target.ClusterSecretName, target.ClusterKeyData)
-			if err1 != nil {
-				fmt.Println("Error while getting cluster key for target ", err1, " with url ", target.URL)
-				return
-			}
+	if config.Target.SecretKey == "" {
+		fmt.Println("SecretKey is empty. Getting from secret in cluster.")
+		var err1 error
+		config.Target.SecretKey, err1 = common.GetSecretValue(config.Target.ClusterKeyNamespace, config.Target.ClusterSecretName, config.Target.ClusterKeyData)
+		if err1 != nil {
+			fmt.Println("Error while getting cluster key for target ", err1, " with url ", config.Target.URL)
+			return
 		}
 	}
 

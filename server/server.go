@@ -59,6 +59,7 @@ func (s *Server) Start() {
 
 	r := http.NewServeMux()
 	// but it is tightly coupled to the internal state of the Server.
+	//TODO: Validate the request method here.
 	r.HandleFunc("/register", s.Register)
 	r.HandleFunc("/request", s.Request)
 	r.HandleFunc("/status", s.status)

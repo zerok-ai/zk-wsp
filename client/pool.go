@@ -3,11 +3,14 @@ package client
 import (
 	"context"
 	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
 	"net/http"
 	"sync"
 	"time"
 )
+
+var POOL_LOG_TAG = "ClientPool"
 
 // Pool manage a pool of connection to a remote Server
 type Pool struct {
@@ -39,7 +42,7 @@ func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool
 
 // Start connect to the remote Server
 func (pool *Pool) Start(ctx context.Context) {
-	pool.connector(ctx)
+	pool.startInternal(ctx)
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -50,14 +53,28 @@ func (pool *Pool) Start(ctx context.Context) {
 			case <-pool.done:
 				break L
 			case <-ticker.C:
-				pool.connector(ctx)
+				pool.startInternal(ctx)
 			}
 		}
 	}()
 }
 
+func (pool *Pool) startInternal(ctx context.Context) {
+	err := pool.connector(ctx)
+	if err != nil {
+		if err == InvalidClusterKey {
+			zklogger.Error(POOL_LOG_TAG, "Invalid cluster key. Shutting down client.")
+			pool.client.Shutdown()
+			return
+		}
+	}
+	if pool.client.ready == false && len(pool.idle) == pool.client.Config.PoolIdleSize {
+		pool.client.ready = true
+	}
+}
+
 // Add new pool connections if needed.
-func (pool *Pool) connector(ctx context.Context) {
+func (pool *Pool) connector(ctx context.Context) error {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 
@@ -69,7 +86,12 @@ func (pool *Pool) connector(ctx context.Context) {
 		fmt.Printf("Creating %v read connections.\n", toCreateRead)
 	}
 
-	pool.createConnections(ctx, toCreateRead, common.Read)
+	err := pool.createConnections(ctx, toCreateRead, common.Read)
+
+	if err != nil {
+		zklogger.Error(POOL_LOG_TAG, "Error creating read connections: %v", err)
+		return err
+	}
 
 	toCreateWrite := pool.connectionsToCreate(writePoolSize)
 
@@ -77,7 +99,13 @@ func (pool *Pool) connector(ctx context.Context) {
 		fmt.Printf("Creating %v write connections.\n", toCreateWrite)
 	}
 
-	pool.createConnections(ctx, toCreateWrite, common.Write)
+	err = pool.createConnections(ctx, toCreateWrite, common.Write)
+
+	if err != nil {
+		zklogger.Error(POOL_LOG_TAG, "Error creating write connections: %v", err)
+		return err
+	}
+	return nil
 }
 
 func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
@@ -92,7 +120,7 @@ func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
 	return toCreate
 }
 
-func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType common.ConnectionType) {
+func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType common.ConnectionType) error {
 	var interfaceConn common.Connection
 	for i := 0; i < toCreate; i++ {
 		switch connType {
@@ -110,9 +138,11 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		err := Connect(interfaceConn, ctx, pool, connType)
 		if err != nil {
 			fmt.Println("Error while creating connection type ", connType, " error is ", err)
-			return
+			pool.Remove(interfaceConn)
+			return err
 		}
 	}
+	return nil
 }
 
 func (pool *Pool) add(conn common.Connection) {

@@ -7,13 +7,13 @@ import (
 
 // Config configures an Proxy
 type Config struct {
-	Targets      []*TargetConfig `yaml:"targets"`
-	PoolIdleSize int             `yaml:"poolIdleSize"`
-	PoolMaxSize  int             `yaml:"poolMaxSize"`
-	SecretKey    string          `yaml:"secretKey"`
-	Host         string          `yaml:"host"`
-	Port         int             `yaml:"port"`
-	Timeout      int             `yaml:"timeout"`
+	Target       *TargetConfig `yaml:"target"`
+	PoolIdleSize int           `yaml:"poolIdleSize"`
+	PoolMaxSize  int           `yaml:"poolMaxSize"`
+	SecretKey    string        `yaml:"secretKey"`
+	Host         string        `yaml:"host"`
+	Port         int           `yaml:"port"`
+	Timeout      int           `yaml:"timeout"`
 }
 
 type TargetConfig struct {
@@ -38,7 +38,7 @@ func NewConfig() (config *Config) {
 	config = new(Config)
 	//fmt.Println("Client id is ", config.ID)
 
-	config.Targets = []*TargetConfig{&TargetConfig{URL: "ws://127.0.0.1:8080/register", SecretKey: ""}}
+	config.Target = &TargetConfig{URL: "ws://127.0.0.1:8080/register", SecretKey: ""}
 	//TODO: We need to create separate pool size for write and read conns.
 	config.PoolIdleSize = 10
 	config.PoolMaxSize = 100
