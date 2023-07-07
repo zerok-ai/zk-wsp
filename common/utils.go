@@ -81,3 +81,11 @@ func GetK8sClient() (*kubernetes.Clientset, error) {
 
 	return clientset, nil
 }
+
+func RespCodeIsOk(status int) bool {
+	if status > 199 && status < 300 {
+		return true
+	}
+	return false
+
+}

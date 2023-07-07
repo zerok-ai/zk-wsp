@@ -8,6 +8,6 @@ targets:
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
-      secretKey: 1234567890
+      secretKey: a5f882c0934789c6d1f047b90517e2217ce2ca81cced19a0639c2f502669e715
 poolIdleSize: 5
 poolMaxSize: 100

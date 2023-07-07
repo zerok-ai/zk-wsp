@@ -121,9 +121,9 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	secretKey := r.Header.Get("X-SECRET-KEY")
-	clientId, err := ValidateSecretKey(secretKey)
+	clientId, err := GetClientId(secretKey, s.Config)
 	if err != nil {
-		wsp.ProxyErrorf(w, "Invalid X-CLUSTER-KEY")
+		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
 		return
 	}
 

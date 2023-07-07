@@ -4,6 +4,7 @@ ssl/
 *.key
 *.crt
 bin/
+vendor/
 
 ## Built binaries
 /wsp_server

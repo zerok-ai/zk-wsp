@@ -8,14 +8,21 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type ZkCloudConfig struct {
+	Host      string `yaml:"host"`
+	Port      string `yaml:"port"`
+	LoginPath string `yaml:"loginPath"`
+}
+
 // Config configures an Server
 type Config struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	Timeout     int    `yaml:"timeout"`
-	IdleTimeout int    `yaml:"idleTimeout"`
-	SecretKey   string `yaml:"secretKey"`
-	PoolMaxSize int    `yaml:"poolMaxSize"`
+	Host        string        `yaml:"host"`
+	Port        int           `yaml:"port"`
+	Timeout     int           `yaml:"timeout"`
+	IdleTimeout int           `yaml:"idleTimeout"`
+	SecretKey   string        `yaml:"secretKey"`
+	PoolMaxSize int           `yaml:"poolMaxSize"`
+	ZkCloud     ZkCloudConfig `yaml:"zkcloud"`
 }
 
 // GetAddr returns the address to specify a HTTP server address
