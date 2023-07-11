@@ -16,13 +16,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.avinpx07.getanton.com
+    - host: api.loadcloud01.getanton.com
       http:
         paths:
           - path: /register
             pathType: Prefix
             backend:
               service:
-                name: zk-wsp-server-service
+                name: zk-wsp-server
                 port:
                   number: 8989

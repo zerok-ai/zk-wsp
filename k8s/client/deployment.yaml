@@ -12,6 +12,7 @@ spec:
       labels:
         app: zk-wsp-client
     spec:
+      serviceAccountName: zk-wsp-client
       containers:
         - name: zk-wsp-client
           image: wsp-client:latest
