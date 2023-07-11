@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zk-wsp-server-deployment
+  name: zk-wsp-server
 spec:
   replicas: 1
   selector:
