@@ -12,5 +12,5 @@ data:
       loginPath: /v1/i/auth/wsplogin
 kind: ConfigMap
 metadata:
-  name: zk-wsp-server-configmap
+  name: zk-wsp-server
   namespace: zkcloud

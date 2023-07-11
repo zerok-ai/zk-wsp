@@ -42,24 +42,20 @@ build-all: build-client build-server
 
 .PHONY: install-server
 install-server: kustomize
-	kubectl apply -f config/server/configmap.yaml
 	cd k8s/server && $(KUSTOMIZE) edit set image wsp-server=${SERVER_IMG}
 	kubectl apply -k k8s/server
 
 .PHONY: uninstall-server
 uninstall-server:
-	kubectl delete --ignore-not-found=true -f config/server/configmap.yaml
 	kubectl delete --ignore-not-found=true -k k8s/server
 
 .PHONY: install-client
 install-client: kustomize
-	kubectl apply -f config/client/configmap.yaml
 	cd k8s/client && $(KUSTOMIZE) edit set image wsp-client=${CLIENT_IMG}
 	kubectl apply -k k8s/client
 
 .PHONY: uninstall-client
 uninstall-client:
-	kubectl delete --ignore-not-found=true -f config/client/configmap.yaml
 	kubectl delete --ignore-not-found=true -k k8s/client
 
 .PHONY: install-all
