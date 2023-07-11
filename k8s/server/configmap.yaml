@@ -6,6 +6,10 @@ data:
     timeout: 30
     idleTimeout: 1800
     poolMaxSize: 100
+    zkcloud:
+      host: zk-auth.zkcloud.svc.cluster.local
+      port: 80
+      loginPath: /v1/i/auth/wsplogin
 kind: ConfigMap
 metadata:
   name: zk-wsp-server-configmap
