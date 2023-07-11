@@ -24,4 +24,4 @@ spec:
       volumes:
         - name: server-config
           configMap:
-            name: zk-wsp-server-configmap
+            name: zk-wsp-server

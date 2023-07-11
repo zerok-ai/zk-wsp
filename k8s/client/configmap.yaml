@@ -14,5 +14,5 @@ data:
     poolmaxsize: 100
 kind: ConfigMap
 metadata:
-  name: zk-wsp-client-configmap
+  name: zk-wsp-client
   namespace: zk-client

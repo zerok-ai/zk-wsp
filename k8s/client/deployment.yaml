@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zk-wsp-client-deployment
+  name: zk-wsp-client
 spec:
   replicas: 1
   selector:
@@ -25,4 +25,4 @@ spec:
       volumes:
         - name: wsp-config
           configMap:
-            name: zk-wsp-client-configmap
+            name: zk-wsp-client
