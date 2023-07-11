@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mychart.fullname" . }}-configmap
+  labels:
+  {{- include "mychart.labels" . | nindent 4 }}
+data:
+  wsp-config.yaml: |-
+    host: localhost
+    port : 8987
+    timeout : 3000
+    target:
+      url: "ws://api.{{ .Values.router.ZK_DOMAIN }}:80/register"
+      clusterSecretName: cluster-info
+      clusterKeyData: clusterKey
+      clusterKeyNamespace: zk-client
+      maxRetries: 3
+    poolidlesize: 5
+    poolmaxsize: 100

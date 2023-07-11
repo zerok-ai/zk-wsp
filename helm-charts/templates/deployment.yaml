@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mychart.fullname" . }}-deployment
+  labels:
+  {{- include "mychart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: zk-wsp-client
+    {{- include "mychart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: zk-wsp-client
+      {{- include "mychart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.deployment.zkWspClient.image.repository }}:{{ .Values.deployment.zkWspClient.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.deployment.zkWspClient.imagePullPolicy }}
+        name: zk-wsp-client
+        ports:
+        - containerPort: 8981
+        resources: {}
+        volumeMounts:
+        - mountPath: /opt
+          name: wsp-config
+      volumes:
+      - configMap:
+          name: {{ include "mychart.fullname" . }}-configmap
+        name: wsp-config

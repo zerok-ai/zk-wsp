@@ -1,0 +1,16 @@
+routes:
+  ZK_DOMAIN: ""
+deployment:
+  replicas: 1
+  zkWspClient:
+    image:
+      repository: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-client
+      tag: dev
+    imagePullPolicy: Always
+kubernetesClusterDomain: cluster.local
+zkWspClient:
+  ports:
+  - port: 8981
+    protocol: TCP
+    targetPort: 8981
+  type: ClusterIP

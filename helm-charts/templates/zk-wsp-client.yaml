@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mychart.fullname" . }}-zk-wsp-client
+  labels:
+  {{- include "mychart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.zkWspClient.type }}
+  selector:
+    app: zk-wsp-client
+  {{- include "mychart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.zkWspClient.ports | toYaml | nindent 2 -}}
