@@ -172,8 +172,6 @@ func (pool *Pool) Remove(conn common.Connection) {
 }
 
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	connection, err := common.GetValueWithTimeout(pool.idle, pool.server.Config.GetTimeout())
 
 	if err == nil && connection.Take() {
