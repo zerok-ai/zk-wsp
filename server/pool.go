@@ -179,5 +179,6 @@ func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
 	if err == nil && connection.Take() {
 		return connection
 	}
+	fmt.Println("Error getting idle connection ", err)
 	return nil
 }
