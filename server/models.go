@@ -13,4 +13,5 @@ type WspLoginResponse struct {
 
 type WspLoginResponsePayload struct {
 	ClusterId string `json:"clusterId"`
+	Killed    bool   `json:"killed"`
 }

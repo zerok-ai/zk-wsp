@@ -29,13 +29,24 @@ func NewHTTPResponse() (r *HTTPResponse) {
 	return
 }
 
-// ProxyError log error and return a HTTP 526 error with the message
+// ProxyError log error and return a HTTP 500 error with the message
 func ProxyError(w http.ResponseWriter, err error) {
 	log.Println(err)
-	http.Error(w, err.Error(), 526)
+	http.Error(w, err.Error(), 500)
 }
 
 // ProxyErrorf log error and return a HTTP 526 error with the message
 func ProxyErrorf(w http.ResponseWriter, format string, args ...interface{}) {
 	ProxyError(w, fmt.Errorf(format, args...))
+}
+
+// InvalidClusterError log error and return a HTTP 526 error with the message
+func InvalidClusterError(w http.ResponseWriter, err error) {
+	log.Println(err)
+	http.Error(w, err.Error(), 526)
+}
+
+// InvalidClusterErrorf log error and return a HTTP 526 error with the message
+func InvalidClusterErrorf(w http.ResponseWriter, format string, args ...interface{}) {
+	InvalidClusterError(w, fmt.Errorf(format, args...))
 }

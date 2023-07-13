@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/zerok-ai/zk-wsp"
 	"github.com/zerok-ai/zk-wsp/common"
@@ -23,6 +24,7 @@ type Client struct {
 	done       chan struct{}
 	httpServer *http.Server
 	ready      bool
+	killed     bool
 }
 
 // NewClient creates a new Client.
@@ -65,7 +67,26 @@ func (c *Client) Status(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (c *Client) SendKillResponse(w http.ResponseWriter) {
+	resp := ClusterKillResponse{Killed: true}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+	w.WriteHeader(500)
+}
+
 func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
+	// [0]: Check if the client is killed.
+	if c.killed {
+		c.SendKillResponse(w)
+		return
+	}
+
 	// [1]: Receive requests to be proxied
 	// Parse destination URL
 	URL, err := common.GetDestinationUrl(w, r)

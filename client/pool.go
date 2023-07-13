@@ -65,6 +65,8 @@ func (pool *Pool) startInternal(ctx context.Context) {
 		if err == InvalidClusterKey {
 			zklogger.Error(POOL_LOG_TAG, "Invalid cluster key. Shutting down client.")
 			pool.client.Shutdown()
+			pool.client.killed = true
+			pool.client.ready = true
 			return
 		}
 	}
