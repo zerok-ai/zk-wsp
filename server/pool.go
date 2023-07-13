@@ -127,15 +127,14 @@ func (pool *Pool) Shutdown() {
 
 	for _, connection := range pool.writeConnections {
 		connection.Close()
-		pool.RemoveWithoutLock(connection)
 	}
 
 	for _, connection := range pool.readConnections {
 		connection.Close()
-		pool.RemoveWithoutLock(connection)
 	}
-	//Commenting this as it may not be needed.
-	//pool.Clean()
+
+	pool.RemoveAllConnections()
+
 }
 
 func (pool *Pool) GetHttpClient() *http.Client {
@@ -150,7 +149,7 @@ func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
 		fmt.Println("Removing read connection from pool")
-		var filtered []*common.ReadConnection // == nil
+		filtered := make([]*common.ReadConnection, 0)
 		for _, i := range pool.readConnections {
 			if c != i {
 				filtered = append(filtered, i)
@@ -160,7 +159,7 @@ func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 		fmt.Println("Read connections length in server is ", len(pool.readConnections))
 	case *common.WriteConnection:
 		fmt.Println("Removing write connection from pool")
-		var filtered []*common.WriteConnection // == nil
+		filtered := make([]*common.WriteConnection, 0)
 		for _, i := range pool.writeConnections {
 			if c != i {
 				filtered = append(filtered, i)
@@ -178,6 +177,11 @@ func (pool *Pool) Remove(conn common.Connection) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	pool.RemoveWithoutLock(conn)
+}
+
+func (pool *Pool) RemoveAllConnections() {
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
 }
 
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {

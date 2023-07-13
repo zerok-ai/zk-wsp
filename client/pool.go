@@ -109,7 +109,6 @@ func (pool *Pool) connector(ctx context.Context) error {
 }
 
 func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
-	//TODO: Here some connecting might be connecting state, we have to consider them.
 	// Create enough connection to fill the pool
 	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
 
@@ -163,11 +162,16 @@ func (pool *Pool) Offer(connection *common.WriteConnection) {
 	fmt.Println("Idle channel length is ", len(pool.idle))
 }
 
+func (pool *Pool) RemoveAllConnections() {
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
+}
+
 func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
 		fmt.Println("Removing read connection from pool")
-		var filtered []*common.ReadConnection // == nil
+		filtered := make([]*common.ReadConnection, 0)
 		for _, i := range pool.readConnections {
 			if c != i {
 				filtered = append(filtered, i)
@@ -177,7 +181,7 @@ func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 		fmt.Println("Read connections length in client is ", len(pool.readConnections))
 	case *common.WriteConnection:
 		fmt.Println("Removing write connection from pool")
-		var filtered []*common.WriteConnection // == nil
+		filtered := make([]*common.WriteConnection, 0)
 		for _, i := range pool.writeConnections {
 			if c != i {
 				filtered = append(filtered, i)
@@ -204,13 +208,12 @@ func (pool *Pool) Shutdown() {
 	close(pool.done)
 	for _, conn := range pool.readConnections {
 		conn.Close()
-		pool.RemoveWithoutLock(conn)
 	}
 
 	for _, conn := range pool.writeConnections {
 		conn.Close()
-		pool.RemoveWithoutLock(conn)
 	}
+	pool.RemoveAllConnections()
 }
 
 // PoolSize represent the total number of connections and idle connections.
