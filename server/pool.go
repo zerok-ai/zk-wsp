@@ -90,6 +90,7 @@ func (pool *Pool) Clean() {
 func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 	lock := connection.GetLock()
 	lock.Lock()
+	defer lock.Unlock()
 	if connection.GetStatus() == common.IDLE {
 		idle++
 		if idle > pool.idleSize {
@@ -101,11 +102,10 @@ func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 					fmt.Println("Closing connection due to timeout and connType write")
 				}
 				connection.CloseWithOutLock()
-				pool.Remove(connection)
+				pool.RemoveWithoutLock(connection)
 			}
 		}
 	}
-	lock.Unlock()
 	return idle
 }
 
@@ -127,13 +127,15 @@ func (pool *Pool) Shutdown() {
 
 	for _, connection := range pool.writeConnections {
 		connection.Close()
+		pool.RemoveWithoutLock(connection)
 	}
 
 	for _, connection := range pool.readConnections {
 		connection.Close()
+		pool.RemoveWithoutLock(connection)
 	}
-
-	pool.Clean()
+	//Commenting this as it may not be needed.
+	//pool.Clean()
 }
 
 func (pool *Pool) GetHttpClient() *http.Client {
@@ -147,21 +149,25 @@ func (pool *Pool) GetLock() *sync.RWMutex {
 func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
+		fmt.Println("Removing read connection from pool")
 		var filtered []*common.ReadConnection // == nil
 		for _, i := range pool.readConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.readConnections = filtered
+		fmt.Println("Read connections length in server is ", len(pool.readConnections))
 	case *common.WriteConnection:
+		fmt.Println("Removing write connection from pool")
 		var filtered []*common.WriteConnection // == nil
 		for _, i := range pool.writeConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.writeConnections = filtered
+		fmt.Println("Write connections length in server is ", len(pool.writeConnections))
 	default:
 		fmt.Println("Object is of unknown type")
 	}

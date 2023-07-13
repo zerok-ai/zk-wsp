@@ -5,7 +5,7 @@ data:
     port : 8987
     timeout : 3000
     target:
-      url: wss://api.loadcloud01.getanton.com:443/register
+      url: ws://api.avinpx07.getanton.com:80/register
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client

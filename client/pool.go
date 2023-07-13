@@ -138,7 +138,8 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		err := Connect(interfaceConn, ctx, pool, connType)
 		if err != nil {
 			fmt.Println("Error while creating connection type ", connType, " error is ", err)
-			pool.Remove(interfaceConn)
+			interfaceConn.Close()
+			pool.RemoveWithoutLock(interfaceConn)
 			return err
 		}
 	}
@@ -165,21 +166,25 @@ func (pool *Pool) Offer(connection *common.WriteConnection) {
 func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
+		fmt.Println("Removing read connection from pool")
 		var filtered []*common.ReadConnection // == nil
 		for _, i := range pool.readConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.readConnections = filtered
+		fmt.Println("Read connections length in client is ", len(pool.readConnections))
 	case *common.WriteConnection:
+		fmt.Println("Removing write connection from pool")
 		var filtered []*common.WriteConnection // == nil
 		for _, i := range pool.writeConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.writeConnections = filtered
+		fmt.Println("Write connections length in client is ", len(pool.writeConnections))
 	default:
 		fmt.Println("Object is of unknown type")
 	}
@@ -194,13 +199,17 @@ func (pool *Pool) Remove(conn common.Connection) {
 
 // Shutdown close all connection in the pool
 func (pool *Pool) Shutdown() {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	close(pool.done)
 	for _, conn := range pool.readConnections {
 		conn.Close()
+		pool.RemoveWithoutLock(conn)
 	}
 
 	for _, conn := range pool.writeConnections {
 		conn.Close()
+		pool.RemoveWithoutLock(conn)
 	}
 }
 

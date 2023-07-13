@@ -93,6 +93,7 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 		// An error occurred throw the connection away
 		log.Println(err)
 		connection.Close()
+		c.pool.Remove(connection)
 
 		// Try to return an error to the client
 		// This might fail if response headers have already been sent

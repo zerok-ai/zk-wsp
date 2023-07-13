@@ -48,6 +48,7 @@ func NewReadConnection(pool ConnectionPool, status int) *ReadConnection {
 func (connection *ReadConnection) Start() {
 	defer func() {
 		fmt.Println("Read connection ending.")
+		(*connection.pool).Remove(connection)
 		connection.Close()
 	}()
 
@@ -61,6 +62,8 @@ func (connection *ReadConnection) Start() {
 			err := connection.ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
 			if err != nil {
 				connection.Close()
+				(*connection.pool).Remove(connection)
+				break
 			}
 		}
 	}()
@@ -186,10 +189,8 @@ func (connection *ReadConnection) error(msg string) (err error) {
 
 // Close the ws/tcp connection and remove it from the pool
 func (connection *ReadConnection) Close() {
-
-	lock := (*connection.pool).GetLock()
-	lock.Lock()
-	defer lock.Unlock()
+	connection.lock.Lock()
+	defer connection.lock.Unlock()
 	connection.CloseWithOutLock()
 }
 
@@ -198,7 +199,6 @@ func (connection *ReadConnection) CloseWithOutLock() {
 		return
 	}
 	defer func() { connection.Status = CLOSED }()
-	(*connection.pool).Remove(connection)
 	err := connection.ws.Close()
 	if err != nil {
 		fmt.Println("Error while closing read connection : ", err)

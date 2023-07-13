@@ -79,7 +79,6 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 
 	if err := ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
 		log.Println("greeting error :", err)
-		conn.Close()
 		return err
 	}
 
