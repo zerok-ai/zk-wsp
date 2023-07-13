@@ -199,9 +199,11 @@ func (connection *ReadConnection) CloseWithOutLock() {
 		return
 	}
 	defer func() { connection.Status = CLOSED }()
-	err := connection.ws.Close()
-	if err != nil {
-		fmt.Println("Error while closing read connection : ", err)
+	if connection.ws != nil {
+		err := connection.ws.Close()
+		if err != nil {
+			fmt.Println("Error while closing read connection : ", err)
+		}
 	}
 }
 

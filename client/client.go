@@ -18,7 +18,6 @@ type Client struct {
 	client *http.Client
 	dialer *websocket.Dialer
 
-	//This map contains pool for each target Id.
 	pool       *Pool
 	lock       sync.RWMutex
 	done       chan struct{}

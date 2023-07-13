@@ -264,10 +264,11 @@ func (connection *WriteConnection) CloseWithOutLock() {
 
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)
-
-	err := connection.ws.Close()
-	if err != nil {
-		fmt.Println("Error while closing read connection : ", err)
+	if connection.ws != nil {
+		err := connection.ws.Close()
+		if err != nil {
+			fmt.Println("Error while closing read connection : ", err)
+		}
 	}
 }
 
