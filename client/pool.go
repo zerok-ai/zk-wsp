@@ -162,8 +162,7 @@ func (pool *Pool) Offer(connection *common.WriteConnection) {
 	fmt.Println("Idle channel length is ", len(pool.idle))
 }
 
-// Remove a connection from the pool
-func (pool *Pool) Remove(conn common.Connection) {
+func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
 		var filtered []*common.ReadConnection // == nil
@@ -184,7 +183,13 @@ func (pool *Pool) Remove(conn common.Connection) {
 	default:
 		fmt.Println("Object is of unknown type")
 	}
+}
 
+// Remove a connection from the pool
+func (pool *Pool) Remove(conn common.Connection) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	pool.RemoveWithoutLock(conn)
 }
 
 // Shutdown close all connection in the pool
