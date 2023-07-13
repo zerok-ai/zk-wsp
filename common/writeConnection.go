@@ -61,6 +61,7 @@ func (connection *WriteConnection) Start() {
 			log.Printf("Write connection crash recovered : %s", r)
 		}
 		fmt.Println("Write connection ending.")
+		(*connection.pool).Remove(connection)
 		connection.Close()
 	}()
 
@@ -249,7 +250,6 @@ func (connection *WriteConnection) Release() {
 func (connection *WriteConnection) Close() {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
-	(*connection.pool).Remove(connection)
 	connection.CloseWithOutLock()
 }
 
@@ -264,9 +264,12 @@ func (connection *WriteConnection) CloseWithOutLock() {
 
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)
-
-	// Close the underlying TCP connection
-	connection.ws.Close()
+	if connection.ws != nil {
+		err := connection.ws.Close()
+		if err != nil {
+			fmt.Println("Error while closing read connection : ", err)
+		}
+	}
 }
 
 func (connection *WriteConnection) GetWs() *websocket.Conn {

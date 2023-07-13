@@ -50,8 +50,9 @@ func (s *Server) Start() {
 		for {
 			select {
 			case <-s.done:
+				fmt.Println("Breaking the cleanup loop.")
 				break L
-			case <-time.After(5 * time.Second):
+			case <-time.After(15 * time.Second):
 				s.clean()
 			}
 		}
@@ -111,6 +112,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 		// An error occurred throw the connection away
 		log.Println(err)
 		connection.Close()
+		pool.Remove(connection)
 
 		// Try to return an error to the httpClient
 		// This might fail if response headers have already been sent
@@ -122,7 +124,11 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	secretKey := r.Header.Get("X-SECRET-KEY")
-	clientId, err := GetClientId(secretKey, s.Config)
+	clientId, killed, err := GetClientId(secretKey, s.Config)
+	if killed {
+		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
+		return
+	}
 	if err != nil {
 		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
 		return
@@ -196,7 +202,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) clean() {
-	//fmt.Println("Cleaning empty connections.")
+	log.Println("Cleaning empty connections.")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -224,5 +230,7 @@ func (s *Server) Shutdown() {
 	for _, pool := range s.pools {
 		pool.Shutdown()
 	}
-	s.clean()
+	s.pools = make(map[string]*Pool)
+	//Removing this as it is not needed.
+	//s.clean()
 }

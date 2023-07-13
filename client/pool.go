@@ -65,6 +65,8 @@ func (pool *Pool) startInternal(ctx context.Context) {
 		if err == InvalidClusterKey {
 			zklogger.Error(POOL_LOG_TAG, "Invalid cluster key. Shutting down client.")
 			pool.client.Shutdown()
+			pool.client.killed = true
+			pool.client.ready = true
 			return
 		}
 	}
@@ -109,7 +111,6 @@ func (pool *Pool) connector(ctx context.Context) error {
 }
 
 func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
-	//TODO: Here some connecting might be connecting state, we have to consider them.
 	// Create enough connection to fill the pool
 	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
 
@@ -138,7 +139,8 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		err := Connect(interfaceConn, ctx, pool, connType)
 		if err != nil {
 			fmt.Println("Error while creating connection type ", connType, " error is ", err)
-			pool.Remove(interfaceConn)
+			interfaceConn.Close()
+			pool.RemoveWithoutLock(interfaceConn)
 			return err
 		}
 	}
@@ -162,33 +164,49 @@ func (pool *Pool) Offer(connection *common.WriteConnection) {
 	fmt.Println("Idle channel length is ", len(pool.idle))
 }
 
-// Remove a connection from the pool
-func (pool *Pool) Remove(conn common.Connection) {
+func (pool *Pool) RemoveAllConnections() {
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
+}
+
+func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
-		var filtered []*common.ReadConnection // == nil
+		fmt.Println("Removing read connection from pool")
+		filtered := make([]*common.ReadConnection, 0)
 		for _, i := range pool.readConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.readConnections = filtered
+		fmt.Println("Read connections length in client is ", len(pool.readConnections))
 	case *common.WriteConnection:
-		var filtered []*common.WriteConnection // == nil
+		fmt.Println("Removing write connection from pool")
+		filtered := make([]*common.WriteConnection, 0)
 		for _, i := range pool.writeConnections {
 			if c != i {
-				filtered = append(filtered, c)
+				filtered = append(filtered, i)
 			}
 		}
 		pool.writeConnections = filtered
+		fmt.Println("Write connections length in client is ", len(pool.writeConnections))
 	default:
 		fmt.Println("Object is of unknown type")
 	}
+}
 
+// Remove a connection from the pool
+func (pool *Pool) Remove(conn common.Connection) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	pool.RemoveWithoutLock(conn)
 }
 
 // Shutdown close all connection in the pool
 func (pool *Pool) Shutdown() {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	close(pool.done)
 	for _, conn := range pool.readConnections {
 		conn.Close()
@@ -197,6 +215,7 @@ func (pool *Pool) Shutdown() {
 	for _, conn := range pool.writeConnections {
 		conn.Close()
 	}
+	pool.RemoveAllConnections()
 }
 
 // PoolSize represent the total number of connections and idle connections.

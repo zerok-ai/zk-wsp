@@ -90,6 +90,7 @@ func (pool *Pool) Clean() {
 func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 	lock := connection.GetLock()
 	lock.Lock()
+	defer lock.Unlock()
 	if connection.GetStatus() == common.IDLE {
 		idle++
 		if idle > pool.idleSize {
@@ -101,11 +102,10 @@ func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 					fmt.Println("Closing connection due to timeout and connType write")
 				}
 				connection.CloseWithOutLock()
-				pool.Remove(connection)
+				pool.RemoveWithoutLock(connection)
 			}
 		}
 	}
-	lock.Unlock()
 	return idle
 }
 
@@ -133,7 +133,8 @@ func (pool *Pool) Shutdown() {
 		connection.Close()
 	}
 
-	pool.Clean()
+	pool.RemoveAllConnections()
+
 }
 
 func (pool *Pool) GetHttpClient() *http.Client {
@@ -144,36 +145,46 @@ func (pool *Pool) GetLock() *sync.RWMutex {
 	return &pool.lock
 }
 
+func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
+	switch c := (conn).(type) {
+	case *common.ReadConnection:
+		fmt.Println("Removing read connection from pool")
+		filtered := make([]*common.ReadConnection, 0)
+		for _, i := range pool.readConnections {
+			if c != i {
+				filtered = append(filtered, i)
+			}
+		}
+		pool.readConnections = filtered
+		fmt.Println("Read connections length in server is ", len(pool.readConnections))
+	case *common.WriteConnection:
+		fmt.Println("Removing write connection from pool")
+		filtered := make([]*common.WriteConnection, 0)
+		for _, i := range pool.writeConnections {
+			if c != i {
+				filtered = append(filtered, i)
+			}
+		}
+		pool.writeConnections = filtered
+		fmt.Println("Write connections length in server is ", len(pool.writeConnections))
+	default:
+		fmt.Println("Object is of unknown type")
+	}
+}
+
 // Remove a connection from the pool
 func (pool *Pool) Remove(conn common.Connection) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-	switch c := (conn).(type) {
-	case *common.ReadConnection:
-		var filtered []*common.ReadConnection // == nil
-		for _, i := range pool.readConnections {
-			if c != i {
-				filtered = append(filtered, c)
-			}
-		}
-		pool.readConnections = filtered
-	case *common.WriteConnection:
-		var filtered []*common.WriteConnection // == nil
-		for _, i := range pool.writeConnections {
-			if c != i {
-				filtered = append(filtered, c)
-			}
-		}
-		pool.writeConnections = filtered
-	default:
-		fmt.Println("Object is of unknown type")
-	}
+	pool.RemoveWithoutLock(conn)
+}
 
+func (pool *Pool) RemoveAllConnections() {
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
 }
 
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	connection, err := common.GetValueWithTimeout(pool.idle, pool.server.Config.GetTimeout())
 
 	if err == nil && connection.Take() {

@@ -12,4 +12,4 @@ kind: Kustomization
 images:
 - name: wsp-client
   newName: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-client
-  newTag: dev
+  newTag: ccfix

@@ -14,12 +14,27 @@ import (
 	"time"
 )
 
-func GetValueWithTimeout(ch <-chan *WriteConnection, timeout time.Duration) (*WriteConnection, error) {
+func getValueWithTimeoutInternal(ch <-chan *WriteConnection, timeout time.Duration) (*WriteConnection, error) {
 	select {
 	case value := <-ch:
 		return value, nil
 	case <-time.After(timeout):
 		return nil, fmt.Errorf("timeout occurred")
+	}
+}
+
+func GetValueWithTimeout(ch <-chan *WriteConnection, timeout time.Duration) (*WriteConnection, error) {
+	startTime := time.Now()
+	for {
+		conn, err := getValueWithTimeoutInternal(ch, timeout)
+		if err != nil {
+			return nil, err
+		}
+		//Checking the status here again because the connection might have been closed by the time we get it from the channel.
+		if conn != nil && conn.Status == IDLE {
+			return conn, nil
+		}
+		timeout = timeout - time.Since(startTime)
 	}
 }
 
