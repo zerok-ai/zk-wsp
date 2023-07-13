@@ -67,7 +67,8 @@ func (c *Client) Status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Client) SendKillResponse(w http.ResponseWriter) {
-	resp := ClusterKillResponse{Killed: true}
+	responseObj := ClusterKillResponseObj{Killed: true}
+	resp := ClusterKillResponse{Payload: responseObj}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
