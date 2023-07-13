@@ -13,8 +13,6 @@ func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, c
 	err := connectInternal(ctx, interfaceConn, pool, connType)
 	if err != nil {
 		log.Printf("Unable to connect to %s : %s", pool.Target, err)
-		//Removing the connection from pool since there is a connection error.
-		pool.Remove(interfaceConn)
 		return err
 	}
 	go interfaceConn.Start()
