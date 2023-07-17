@@ -1,21 +1,23 @@
 package client
 
 import (
+	logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 	"strconv"
 	"time"
 )
 
 // Config configures an Proxy
 type Config struct {
-	Target               *TargetConfig `yaml:"target"`
-	PoolIdleSize         int           `yaml:"poolIdleSize"`
-	PoolMaxSize          int           `yaml:"poolMaxSize"`
-	SecretKey            string        `yaml:"secretKey"`
-	Host                 string        `yaml:"host"`
-	Port                 int           `yaml:"port"`
-	Timeout              int           `yaml:"timeout"`
-	MaxRetryInterval     int           `yaml:"maxRetryInterval"`
-	DefaultRetryInterval int           `yaml:"defaultRetryInterval"`
+	Target               *TargetConfig         `yaml:"target"`
+	PoolIdleSize         int                   `yaml:"poolIdleSize"`
+	PoolMaxSize          int                   `yaml:"poolMaxSize"`
+	SecretKey            string                `yaml:"secretKey"`
+	Host                 string                `yaml:"host"`
+	Port                 int                   `yaml:"port"`
+	Timeout              int                   `yaml:"timeout"`
+	MaxRetryInterval     int                   `yaml:"maxRetryInterval"`
+	DefaultRetryInterval int                   `yaml:"defaultRetryInterval"`
+	LogsConfig           logsConfig.LogsConfig `yaml:"logs"`
 }
 
 type TargetConfig struct {

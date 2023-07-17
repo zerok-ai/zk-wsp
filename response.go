@@ -2,9 +2,11 @@ package wsp
 
 import (
 	"fmt"
-	"log"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"net/http"
 )
+
+var RESP_LOG_TAG = "Response"
 
 // HTTPResponse is a serializable version of http.Response ( with only useful fields )
 type HTTPResponse struct {
@@ -31,7 +33,7 @@ func NewHTTPResponse() (r *HTTPResponse) {
 
 // ProxyError log error and return a HTTP 500 error with the message
 func ProxyError(w http.ResponseWriter, err error) {
-	log.Println(err)
+	zklogger.Debug(RESP_LOG_TAG, err)
 	http.Error(w, err.Error(), 500)
 }
 
@@ -42,7 +44,7 @@ func ProxyErrorf(w http.ResponseWriter, format string, args ...interface{}) {
 
 // InvalidClusterError log error and return a HTTP 526 error with the message
 func InvalidClusterError(w http.ResponseWriter, err error) {
-	log.Println(err)
+	zklogger.Debug(RESP_LOG_TAG, err)
 	http.Error(w, err.Error(), 526)
 }
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
 	"github.com/zerok-ai/zk-wsp/utils"
 	"os"
@@ -12,21 +12,25 @@ import (
 	"github.com/zerok-ai/zk-wsp/client"
 )
 
+var LOG_TAG = "WspClientMain"
+
 func main() {
 
 	config := client.NewConfig()
 	if err := utils.ProcessArgs(config); err != nil {
-		fmt.Println("Unable to process wsp client config. Stopping wsp client.")
+		zklogger.Error(LOG_TAG, "Unable to process wsp client config. Stopping wsp client.")
 		return
 	}
 
+	zklogger.Init(config.LogsConfig)
+
 	//If secretKey is not provided in config, get it from cluster secrets.
 	if config.Target.SecretKey == "" {
-		fmt.Println("SecretKey is empty. Getting from secret in cluster.")
+		zklogger.Debug(LOG_TAG, "SecretKey is empty. Getting from secret in cluster.")
 		var err1 error
 		config.Target.SecretKey, err1 = common.GetSecretValue(config.Target.ClusterKeyNamespace, config.Target.ClusterSecretName, config.Target.ClusterKeyData)
 		if err1 != nil {
-			fmt.Println("Error while getting cluster key for target ", err1, " with url ", config.Target.URL)
+			zklogger.Error(LOG_TAG, "Error while getting cluster key for target ", err1, " with url ", config.Target.URL)
 			return
 		}
 	}

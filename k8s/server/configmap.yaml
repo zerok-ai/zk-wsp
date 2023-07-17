@@ -10,6 +10,9 @@ data:
       host: zk-auth.zkcloud.svc.cluster.local
       port: 80
       loginPath: /v1/i/auth/wsplogin
+    logs:
+      color: true
+      level: DEBUG
 kind: ConfigMap
 metadata:
   name: zk-wsp-server

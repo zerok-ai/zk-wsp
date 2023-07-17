@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/utils"
 	"os"
 	"os/signal"
@@ -10,12 +10,16 @@ import (
 	"github.com/zerok-ai/zk-wsp/server"
 )
 
+var LOG_TAG = "WspServerMain"
+
 func main() {
 	config := server.NewConfig()
 	if err := utils.ProcessArgs(config); err != nil {
-		fmt.Println("Unable to process wsp server config. Stopping wsp server.")
+		zklogger.Debug(LOG_TAG, "Unable to process wsp server config. Stopping wsp server.")
 		return
 	}
+
+	zklogger.Init(config.LogsConfig)
 
 	wspServer := server.NewServer(config)
 	wspServer.Start()

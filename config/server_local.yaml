@@ -7,3 +7,6 @@ zkcloud:
   host: localhost
   port: 8883
   loginPath: /v1/i/auth/wsplogin
+logs:
+  color: true
+  level: DEBUG

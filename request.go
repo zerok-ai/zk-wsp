@@ -7,6 +7,8 @@ import (
 	"regexp"
 )
 
+var REQ_LOG_TAG = "Request"
+
 // HTTPRequest is a serializable version of http.Request ( with only usefull fields )
 type HTTPRequest struct {
 	Method        string

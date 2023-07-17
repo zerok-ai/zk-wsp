@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp"
 	"github.com/zerok-ai/zk-wsp/common"
 	"log"
@@ -25,6 +26,8 @@ type Client struct {
 	ready      bool
 	killed     bool
 }
+
+var ZK_LOG_TAG = "WspClient"
 
 // NewClient creates a new Client.
 func NewClient(config *Config) (c *Client) {
@@ -112,7 +115,7 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 	// [3]: Send the request to the peer through the WebSocket connection.
 	if err := connection.ProxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
-		log.Println(err)
+		zklogger.Error(ZK_LOG_TAG, "Error while proxying request: %s", err.Error())
 		connection.Close()
 		c.pool.Remove(connection)
 

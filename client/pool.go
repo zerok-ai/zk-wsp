@@ -5,7 +5,6 @@ import (
 	"fmt"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -62,7 +61,7 @@ func (pool *Pool) Start(ctx context.Context) {
 }
 
 func (pool *Pool) startInternal(ctx context.Context) {
-	log.Println("Executing start internal method.")
+	zklogger.Debug(POOL_LOG_TAG, "Executing start internal method.")
 	err := pool.connector(ctx)
 	if err != nil {
 		if err == InvalidClusterKey {
@@ -96,7 +95,7 @@ func (pool *Pool) connector(ctx context.Context) error {
 	toCreateRead := pool.connectionsToCreate(readPoolSize)
 
 	if toCreateRead > 0 {
-		fmt.Printf("Creating %v read connections.\n", toCreateRead)
+		zklogger.Debug(POOL_LOG_TAG, "Creating %v read connections.\n", toCreateRead)
 	}
 
 	err := pool.createConnections(ctx, toCreateRead, common.Read)
@@ -109,7 +108,7 @@ func (pool *Pool) connector(ctx context.Context) error {
 	toCreateWrite := pool.connectionsToCreate(writePoolSize)
 
 	if toCreateWrite > 0 {
-		fmt.Printf("Creating %v write connections.\n", toCreateWrite)
+		zklogger.Debug(POOL_LOG_TAG, "Creating %v write connections.\n", toCreateWrite)
 	}
 
 	err = pool.createConnections(ctx, toCreateWrite, common.Write)

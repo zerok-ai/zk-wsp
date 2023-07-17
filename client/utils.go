@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
-	"log"
 	"net/http"
 )
+
+var UTILS_LOG_TAG = "ClientUtils"
 
 func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType) error {
 	err := connectInternal(ctx, interfaceConn, pool, connType)
 	if err != nil {
-		log.Printf("Unable to connect to %s : %s", pool.Target, err)
+		zklogger.Error(UTILS_LOG_TAG, "Unable to connect to %s : %s", pool.Target, err)
 		return err
 	}
 	go interfaceConn.Start()
@@ -22,17 +24,17 @@ func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, c
 // Connect to the IsolatorServer using a HTTP websocket
 func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType) (err error) {
 	if pool == nil {
-		log.Printf("Aborting connection since pool is nil.")
+		zklogger.Error(UTILS_LOG_TAG, "Aborting connection since pool is nil.")
 	}
 
-	log.Printf("Connecting to %s and type %v", pool.Target, connectionType)
+	zklogger.Debug(UTILS_LOG_TAG, "Connecting to %s and type %v", pool.Target, connectionType)
 
 	targetConfig := pool.Target
 
 	secretKey := targetConfig.SecretKey
 
 	if err != nil {
-		fmt.Println("Error while getting cluster key for ws connection to server", err, connectionType)
+		zklogger.Error(UTILS_LOG_TAG, "Error while getting cluster key for ws connection to server", err, connectionType)
 		return err
 	}
 
@@ -44,18 +46,18 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	)
 
 	if response != nil && response.StatusCode == InvalidClusterKeyResponseCode {
-		fmt.Println("Invalid cluster key")
+		zklogger.Error(UTILS_LOG_TAG, "Invalid cluster key")
 		return InvalidClusterKey
 	}
 
 	if err != nil {
-		fmt.Println("Error while establishing websocket connection to server", err, connectionType)
+		zklogger.Error(UTILS_LOG_TAG, "Error while establishing websocket connection to server", err, connectionType)
 		return err
 	}
 
 	conn.SetWs(ws)
 
-	log.Printf("Connected to %s and type %v", pool.Target, connectionType)
+	zklogger.Debug(UTILS_LOG_TAG, "Connected to %s and type %v", pool.Target, connectionType)
 
 	var serverConnType common.ConnectionType
 
@@ -65,7 +67,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	case common.Write:
 		serverConnType = common.Read
 	default:
-		fmt.Println("Object is of unknown type")
+		zklogger.Error(UTILS_LOG_TAG, "Object is of unknown type")
 	}
 
 	// Send the greeting message with proxy id and wanted pool size.
@@ -76,7 +78,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	)
 
 	if err := ws.WriteMessage(websocket.TextMessage, []byte(greeting)); err != nil {
-		log.Println("greeting error :", err)
+		zklogger.Error(UTILS_LOG_TAG, "greeting error :", err)
 		return err
 	}
 

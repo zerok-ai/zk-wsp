@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
 	"log"
 	"math/rand"
@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/zerok-ai/zk-wsp"
 )
+
+var SERVER_LOG_TAG = "WspServer"
 
 // Server is a Reverse HTTP Proxy over WebSocket
 // This is the Server part, Clients will offer websocket writeConnections,
@@ -50,7 +52,7 @@ func (s *Server) Start() {
 		for {
 			select {
 			case <-s.done:
-				fmt.Println("Breaking the cleanup loop.")
+				zklogger.Debug(SERVER_LOG_TAG, "Breaking the cleanup loop.")
 				break L
 			case <-time.After(15 * time.Second):
 				s.clean()
@@ -90,7 +92,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[%s] %s", r.Method, r.URL.String())
+	zklogger.Debug(SERVER_LOG_TAG, "[%s] %s", r.Method, r.URL.String())
 
 	pool := s.pools[clientId]
 
@@ -110,7 +112,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 	// [3]: Send the request to the peer through the WebSocket connection.
 	if err := connection.ProxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
-		log.Println(err)
+		zklogger.Error(SERVER_LOG_TAG, "Error while proxying request ", err)
 		connection.Close()
 		pool.Remove(connection)
 
@@ -166,14 +168,14 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Clientid is ", clientId, "idleSize is ", idleSize, "connectionType is ", connectionType)
+	zklogger.Debug(SERVER_LOG_TAG, "Clientid is ", clientId, "idleSize is ", idleSize, "connectionType is ", connectionType)
 
 	// 3. Register the connection into server pools.
 	// s.lock is for exclusive control of pools operation.
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	fmt.Println("Executing next line after lock.")
+	zklogger.Debug(SERVER_LOG_TAG, "Executing next line after lock.")
 
 	var pool *Pool
 	// There is no need to create a new pool,
@@ -194,7 +196,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Add the WebSocket connection to the pool
 	pool.AddConnection(ws, common.ConnectionType(connectionType))
-	fmt.Println("Adding connection done.")
+	zklogger.Debug(SERVER_LOG_TAG, "Adding connection done.")
 }
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +204,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) clean() {
-	log.Println("Cleaning empty connections.")
+	zklogger.Debug(SERVER_LOG_TAG, "Cleaning empty connections.")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -213,7 +215,7 @@ func (s *Server) clean() {
 	pools := make(map[string]*Pool)
 	for id, pool := range s.pools {
 		if pool.IsEmpty() {
-			log.Printf("Removing empty connection pool : %s", pool.clientId)
+			zklogger.Debug(SERVER_LOG_TAG, "Removing empty connection pool : %s", pool.clientId)
 			pool.Shutdown()
 		} else {
 			pools[id] = pool
