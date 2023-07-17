@@ -7,13 +7,15 @@ import (
 
 // Config configures an Proxy
 type Config struct {
-	Target       *TargetConfig `yaml:"target"`
-	PoolIdleSize int           `yaml:"poolIdleSize"`
-	PoolMaxSize  int           `yaml:"poolMaxSize"`
-	SecretKey    string        `yaml:"secretKey"`
-	Host         string        `yaml:"host"`
-	Port         int           `yaml:"port"`
-	Timeout      int           `yaml:"timeout"`
+	Target               *TargetConfig `yaml:"target"`
+	PoolIdleSize         int           `yaml:"poolIdleSize"`
+	PoolMaxSize          int           `yaml:"poolMaxSize"`
+	SecretKey            string        `yaml:"secretKey"`
+	Host                 string        `yaml:"host"`
+	Port                 int           `yaml:"port"`
+	Timeout              int           `yaml:"timeout"`
+	MaxRetryInterval     int           `yaml:"maxRetryInterval"`
+	DefaultRetryInterval int           `yaml:"defaultRetryInterval"`
 }
 
 type TargetConfig struct {

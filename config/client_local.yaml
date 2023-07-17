@@ -10,3 +10,5 @@ target:
   secretKey: a5f882c0934789c6d1f047b90517e2217ce2ca81cced19a0639c2f502669e715 # Only provide this while testing in local. On cluster this will read from secret.
 poolIdleSize: 5
 poolMaxSize: 100
+maxRetryInterval: 300
+defaultRetryInterval: 30

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -22,8 +23,9 @@ type Pool struct {
 	writeConnections []*common.WriteConnection
 	lock             sync.RWMutex
 	idle             chan *common.WriteConnection
-
-	done chan struct{}
+	ticker           *time.Ticker
+	done             chan struct{}
+	retryInterval    time.Duration
 }
 
 // NewPool creates a new Pool
@@ -37,6 +39,8 @@ func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool
 	pool.idle = make(chan *common.WriteConnection, client.Config.PoolMaxSize)
 	pool.secretKey = secretKey
 	pool.done = make(chan struct{})
+	pool.ticker = time.NewTicker(time.Second * time.Duration(client.Config.DefaultRetryInterval))
+	pool.retryInterval = time.Second * time.Duration(client.Config.DefaultRetryInterval)
 	return
 }
 
@@ -44,15 +48,13 @@ func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool
 func (pool *Pool) Start(ctx context.Context) {
 	pool.startInternal(ctx)
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-
+		defer pool.ticker.Stop()
 	L:
 		for {
 			select {
 			case <-pool.done:
 				break L
-			case <-ticker.C:
+			case <-pool.ticker.C:
 				pool.startInternal(ctx)
 			}
 		}
@@ -60,6 +62,7 @@ func (pool *Pool) Start(ctx context.Context) {
 }
 
 func (pool *Pool) startInternal(ctx context.Context) {
+	log.Println("Executing start internal method.")
 	err := pool.connector(ctx)
 	if err != nil {
 		if err == InvalidClusterKey {
@@ -69,7 +72,15 @@ func (pool *Pool) startInternal(ctx context.Context) {
 			pool.client.ready = true
 			return
 		}
+		pool.retryInterval = pool.retryInterval * 2
+		maxRetryInterval := time.Second * time.Duration(pool.client.Config.MaxRetryInterval)
+		if pool.retryInterval > maxRetryInterval {
+			pool.retryInterval = maxRetryInterval
+		}
+	} else {
+		pool.retryInterval = time.Second * time.Duration(pool.client.Config.DefaultRetryInterval)
 	}
+	pool.ticker.Reset(pool.retryInterval)
 	if pool.client.ready == false && len(pool.idle) == pool.client.Config.PoolIdleSize {
 		pool.client.ready = true
 	}
