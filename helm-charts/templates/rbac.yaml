@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "zk-wsp.fullname" . }}-client
+  name: {{ include "zk-wsp.fullname" . }}
 
 ---
 
@@ -22,7 +22,7 @@ metadata:
   name: zk-secrets-rolebinding
 subjects:
   - kind: ServiceAccount
-    name: {{ include "zk-wsp.fullname" . }}-client
+    name: {{ include "zk-wsp.fullname" . }}
 roleRef:
   kind: Role
   name: zk-secrets-role

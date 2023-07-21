@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zk-wsp.fullname" . }}-deployment
+  name: {{ include "zk-wsp.fullname" . }}
   labels:
   {{- include "zk-wsp.labels" . | nindent 4 }}
 spec:
@@ -16,7 +16,7 @@ spec:
         app: zk-wsp-client
       {{- include "zk-wsp.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "zk-wsp.fullname" . }}-client
+      serviceAccountName: {{ include "zk-wsp.fullname" . }}
       containers:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN
@@ -32,5 +32,5 @@ spec:
           name: wsp-config
       volumes:
       - configMap:
-          name: {{ include "zk-wsp.fullname" . }}-client
+          name: {{ include "zk-wsp.fullname" . }}
         name: wsp-config
