@@ -1,19 +1,24 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "mychart.fullname" . }}-configmap
+  name: {{ include "zk-wsp.fullname" . }}-client
   labels:
-  {{- include "mychart.labels" . | nindent 4 }}
+  {{- include "zk-wsp.labels" . | nindent 4 }}
 data:
   wsp-config.yaml: |-
-    host: localhost
+    host: 0.0.0.0
     port : 8987
     timeout : 3000
     target:
-      url: "ws://api.{{ .Values.router.ZK_DOMAIN }}:80/register"
+      url: "wss://api.{{ .Values.zkcloud.host }}:{{ .Values.zkcloud.port }}/register"
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
-    poolidlesize: 5
-    poolmaxsize: 100
+    poolIdleSize: 5
+    poolMaxSize: 100
+    maxRetryInterval: 300
+    defaultRetryInterval: 30
+    logs:
+      color: true
+      level: DEBUG

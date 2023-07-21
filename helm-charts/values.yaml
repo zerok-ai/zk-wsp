@@ -1,16 +1,25 @@
+zkcloud:
+  host: "loadcloud01.getanton.com"
+  port: 443
+
+image:
+  repo: "us-west1-docker.pkg.dev/zerok-dev/zerok-cli/zk-wsp-client"
+  tag: "latest"
+  imagePullPolicy: Always
+
 routes:
-  ZK_DOMAIN: ""
+  zkCloudAddr: ""
 deployment:
   replicas: 1
   zkWspClient:
     image:
-      repository: us-west1-docker.pkg.dev/zerok-dev/stage/zk-wsp-client
+      repository: nginx
       tag: dev
     imagePullPolicy: Always
 kubernetesClusterDomain: cluster.local
 zkWspClient:
   ports:
-  - port: 8981
+  - port: 8987
     protocol: TCP
-    targetPort: 8981
+    targetPort: 8987
   type: ClusterIP

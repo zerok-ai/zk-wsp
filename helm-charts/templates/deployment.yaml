@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "mychart.fullname" . }}-deployment
+  name: {{ include "zk-wsp.fullname" . }}-deployment
   labels:
-  {{- include "mychart.labels" . | nindent 4 }}
+  {{- include "zk-wsp.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.deployment.replicas }}
   selector:
     matchLabels:
       app: zk-wsp-client
-    {{- include "mychart.selectorLabels" . | nindent 6 }}
+    {{- include "zk-wsp.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
         app: zk-wsp-client
-      {{- include "mychart.selectorLabels" . | nindent 8 }}
+      {{- include "zk-wsp.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "zk-wsp.fullname" . }}-client
       containers:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.deployment.zkWspClient.image.repository }}:{{ .Values.deployment.zkWspClient.image.tag
-          | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.deployment.zkWspClient.imagePullPolicy }}
+        image: "{{ .Values.image.repo}}:{{ .Values.image.tag}}"
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
         name: zk-wsp-client
         ports:
-        - containerPort: 8981
+        - containerPort: 8987
         resources: {}
         volumeMounts:
         - mountPath: /opt
           name: wsp-config
       volumes:
       - configMap:
-          name: {{ include "mychart.fullname" . }}-configmap
+          name: {{ include "zk-wsp.fullname" . }}-client
         name: wsp-config
