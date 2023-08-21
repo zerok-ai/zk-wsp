@@ -1,13 +1,18 @@
-name: build and publish (Client)
+name: build and publish (Client) - Old
 on:
   workflow_dispatch:
      inputs:
         ENV:
             description: 'ENV'
             required: true
-            default: 'poc'  
+            default: 'poc'
+        DOCKER_TAG:
+          description: 'docker image tag'
+          required: true
+          default: 'latest'
 env:
   ENV: ${{ github.event.inputs.ENV }}
+  DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
   GOOS: ${{ vars.GOOS }}
   GOARCH: ${{ vars.GOARCH }}
   GO111MODULE: ${{ vars.GO111MODULE }}
@@ -55,8 +60,14 @@ jobs:
 
       - name: Docker build
         run: |-
-            docker build --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA" . --build-arg APP_FILE=wsp_client
+          docker build --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA" . --build-arg APP_FILE=wsp_client
+
+      - name: Docker Tag
+        run: |-
+          docker tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA" "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$DOCKER_TAG"
+      
       
       - name: Docker push
         run: |-
-            docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA"
+          docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA"
+          docker push  "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$DOCKER_TAG"
