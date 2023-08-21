@@ -93,7 +93,7 @@ jobs:
         run: echo "$STEPS_CONTEXT"
 
   build-push:
-    uses: zerok-ai/zk-wsp-client/.github/workflows/zk-client-build-push.yml@helm-push
+    uses: zerok-ai/zk-wsp/.github/workflows/zk-client-build-push.yml@helm-push
     with:
       VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
