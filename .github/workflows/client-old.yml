@@ -1,4 +1,4 @@
-name: build and publish (Client)
+name: build and publish (Client) - Old
 on:
   workflow_dispatch:
      inputs:

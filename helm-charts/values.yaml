@@ -3,8 +3,8 @@ zkcloud:
   port: 443
 
 image:
-  repo: "us-west1-docker.pkg.dev/zerok-dev/zerok-cli/zk-wsp-client"
-  tag: "latest"
+  repo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-wsp-client"
+  tag: latest
   imagePullPolicy: Always
 
 routes:
