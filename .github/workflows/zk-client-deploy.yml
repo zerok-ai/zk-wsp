@@ -154,7 +154,7 @@ jobs:
           helm --install  \
           --set=global.dockerBase=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME \
           --set=image.tag=$VERSION \
-          --set=zkcloud.host=$ZK_DOMAIN \
+          --set=global.zkcloud.host=$ZK_DOMAIN \
           upgrade $APP_NAME \
            -f ./helm-charts/values.yaml ./helm-charts/ \
            --create-namespace \
