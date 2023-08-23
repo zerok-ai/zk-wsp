@@ -103,7 +103,7 @@ jobs:
     needs: init
 
   helm-push:
-    uses: zerok-ai/zk-wsp/.github/workflows/zk-helm-publish.yml@helm-push
+    uses: zerok-ai/zk-wsp/.github/workflows/zk-client-helm-publish.yml@helm-push
     with:
       HELM_VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
