@@ -21,7 +21,7 @@ spec:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: "{{ .Values.image.repo}}:{{ .Values.image.tag}}"
+        image: "{{ .Values.global.dockerBase}}/{{ .Values.image.repo}}:{{ .Values.image.tag}}"
         imagePullPolicy: {{ .Values.image.imagePullPolicy }}
         name: zk-wsp-client
         ports:

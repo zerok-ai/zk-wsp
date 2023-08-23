@@ -102,6 +102,17 @@ jobs:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
     needs: init
 
+  helm-push:
+    uses: zerok-ai/zk-wsp/.github/workflows/zk-helm-publish.yml@helm-push
+    with:
+      HELM_VERSION: ${{ needs.init.outputs.VERSION }}
+      ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
+    secrets:
+      AWS_ACCESS_ID: ${{ secrets.AWS_ACCESS_ID }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+    needs: [ init,build-push ]
+
   deploy:
     needs: [ init,build-push ]
     env:
@@ -141,7 +152,7 @@ jobs:
       - name: Deploy
         run: |-
           helm --install  \
-          --set=image.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$APP_NAME \
+          --set=global.dockerBase=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME \
           --set=image.tag=$VERSION \
           --set=zkcloud.host=$ZK_DOMAIN \
           upgrade $APP_NAME \
