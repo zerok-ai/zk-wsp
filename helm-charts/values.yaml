@@ -1,9 +1,8 @@
 global:
   dockerBase: "us-west1-docker.pkg.dev/zerok-dev/zk-client"
-
-zkcloud:
-  host: "loadcloud01.getanton.com"
-  port: 443
+  zkcloud:
+    host: "devcloud01.getanton.com"
+    port: 443
 
 image:
   repo: "zk-wsp-client"

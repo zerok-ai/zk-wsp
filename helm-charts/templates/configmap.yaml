@@ -10,7 +10,7 @@ data:
     port : 8987
     timeout : 3000
     target:
-      url: "wss://api.{{ .Values.zkcloud.host }}:{{ .Values.zkcloud.port }}/register"
+      url: "wss://api.{{ .Values.global.zkcloud.host }}:{{ .Values.global.zkcloud.port }}/register"
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
