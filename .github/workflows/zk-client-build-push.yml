@@ -59,7 +59,7 @@ jobs:
         run: git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Build
-        run: go build -v -o zk-wsp-client cmd/main.go
+        run: go build -v -o zk-wsp-client cmd/wsp_client/main.go
 
       - name: Uploading Helm Charts (for deploy)
         uses: actions/upload-artifact@v3
@@ -103,7 +103,7 @@ jobs:
       - name: Docker build
         run: |-
           echo "DOCKER_TAG=$VERSION"
-          docker build  --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$GITHUB_SHA" .
+          docker build  --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$GITHUB_SHA" . --build-arg APP_FILE=zk-wsp-client
 
       - name: Docker Tag
         run: |-
