@@ -1,23 +1,25 @@
-# Purpose: This action is triggered manually and is meant for the case where
-# the build happens through this action and the deployment is done through CLI
-name: dev-build-push
+name: prod-build-push (Client)
 on:
-  workflow_dispatch:
-    inputs:
-      DOCKER_TAG:
-        description: 'Docker Image Tag'
-        required: true
-        default: '0.0.9-helmtest'
-      GKE_CLUSTER:
-        description: 'Cluster Name'
-        required: true
-        default: 'devclient03'
+  push:
+    tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
+      - 'prod/**'
 
+#  # Uncomment the following code for testing
+#  workflow_dispatch:
+#    inputs:
+#      DOCKER_TAG:
+#        description: 'Docker Image Tag'
+#        required: true
+#        default: '0.0.9-helmtest'
+#      ENV:
+#        description: 'ENV'
+#        required: true
+#        default: 'poc'
 jobs:
   init:
-    uses: zerok-ai/zk-git-actions/.github/workflows/zk-dev-init.yml@main
+    uses: zerok-ai/zk-git-actions/.github/workflows/zk-prod-init.yml@main
     with:
-      GKE_CLUSTER: ${{ github.event.inputs.GKE_CLUSTER }}
+      ENVIRONMENT: ${{ github.event.inputs.ENV }}
       GIT_TAG: ${{ github.ref }}
       DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
 
@@ -26,13 +28,13 @@ jobs:
     with:
       VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
-      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.ENVIRONMENT }}
       PROJECT_ID: ${{ needs.init.outputs.PROJECT_ID }}
       DOCKER_FILE_NAME: 'Dockerfile-Client'
       MAKE_TARGET: 'ci-cd-build-client'
       APP_NAME_VAR: 'APP_NAME_CLIENT'
     secrets:
-      GKE_SA_KEY: ${{ secrets.GKE_SA_KEY_DEV }}
+      GKE_SA_KEY: ${{ secrets.GKE_SA_KEY_PROD }}
     needs: init
 
   # build helm charts and publish to helm repository
@@ -41,7 +43,7 @@ jobs:
     with:
       HELM_VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
-      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.ENVIRONMENT }}
       HELM_BUCKET_NAME: ${{ needs.init.outputs.HELM_BUCKET_NAME }}
       HELM_BUCKET_URL: ${{ needs.init.outputs.HELM_BUCKET_URL }}
       PROJECT_ID: ${{ needs.init.outputs.PROJECT_ID }}

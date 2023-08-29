@@ -1,6 +1,6 @@
 # Purpose: This action is triggered through a git push and does all it takes to  deploy the app
 # on a cluster
-name: dev-build-push-deploy
+name: dev-build-push-deploy (Client)
 on:
   push:
     tags: #dev/<CLUSTER>/<DOCKER-TAG-OR-VERSION>
