@@ -70,4 +70,4 @@ run-test-server:
 
 # ------- CI-CD ------------
 ci-cd-build-client:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o zk-wsp-client cmd/wsp_client/main.go
