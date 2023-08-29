@@ -6,7 +6,7 @@ global:
 
 image:
   repo: "zk-wsp-client"
-  tag: latest
+  tag: "latest"
   imagePullPolicy: Always
 
 routes:

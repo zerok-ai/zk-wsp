@@ -2,7 +2,7 @@ name: client-prod
 on:
   push:
     tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
-      - 'prod/**'
+      - 'oldprod/**'
   workflow_dispatch:
     inputs:
       DOCKER_TAG:

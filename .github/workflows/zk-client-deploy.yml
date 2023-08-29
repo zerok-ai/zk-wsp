@@ -2,7 +2,7 @@ name: client-deploy
 on:
   push:
     tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
-      - 'r/**'
+      - 'oldr/**'
   workflow_dispatch:
     inputs:
       DOCKER_TAG:
