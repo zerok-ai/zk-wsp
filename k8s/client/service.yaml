@@ -9,4 +9,9 @@ spec:
     - protocol: TCP
       port: 8987
       targetPort: 8987
+      name: legacy
+    - protocol: TCP
+      port: 80
+      targetPort: 8987
+      name: default
   type: ClusterIP
