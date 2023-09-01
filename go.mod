@@ -4,8 +4,7 @@ go 1.19
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
-	github.com/zerok-ai/zk-utils-go v0.4.7-0.20230706061423-e666b08830dc
+	github.com/zerok-ai/zk-utils-go v0.4.10
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.27.3
