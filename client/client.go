@@ -50,7 +50,7 @@ func (c *Client) Start(ctx context.Context) {
 	r := http.NewServeMux()
 	//TODO: Validate the request method here.
 	r.HandleFunc("/request", c.Request)
-	r.HandleFunc("/status", c.Status)
+	r.HandleFunc("/healthz", c.Status)
 
 	c.httpServer = &http.Server{
 		Addr:    c.Config.GetAddr(),
