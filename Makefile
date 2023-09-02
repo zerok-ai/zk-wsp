@@ -34,7 +34,7 @@ build-server:
 .PHONY: build-client
 build-client:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
-	docker build -t ${CLIENT_IMG} . --build-arg APP_FILE=wsp_client
+	docker build -f Dockerfile-Client -t ${CLIENT_IMG} .
 	docker push ${CLIENT_IMG}
 
 .PHONY: build-all
@@ -67,3 +67,7 @@ uninstall-all: uninstall-client uninstall-server
 .PHONY: run-test-server
 run-test-server:
 	go run ./examples/test_api/main.go
+
+# ------- CI-CD ------------
+ci-cd-build-client:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o zk-wsp-client cmd/wsp_client/main.go
