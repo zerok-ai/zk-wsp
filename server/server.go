@@ -86,9 +86,9 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 	}
 	r.URL = URL
 
-	clientId := r.Header.Get("X-CLIENT-ID")
-	if clientId == "" {
-		wsp.ProxyErrorf(w, "Missing clientId header")
+	clientId, err := common.GetClientId(w, r)
+	if err != nil {
+		wsp.ProxyErrorf(w, "Missing clientId value")
 		return
 	}
 

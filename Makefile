@@ -33,7 +33,7 @@ build-server:
 
 .PHONY: build-client
 build-client:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o zk-wsp-client cmd/wsp_client/main.go
 	docker build -f Dockerfile-Client -t ${CLIENT_IMG} .
 	docker push ${CLIENT_IMG}
 

@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -38,11 +39,35 @@ func GetValueWithTimeout(ch <-chan *WriteConnection, timeout time.Duration) (*Wr
 	}
 }
 
+func GetClientId(w http.ResponseWriter, r *http.Request) (string, error) {
+	clientIdKey := "X-CLIENT-ID"
+	clientId := r.Header.Get(clientIdKey)
+	if clientId == "" {
+		logger.Debug(LOG_TAG, "Missing clientId header, searching in query param")
+		//Checking in query params.
+		queryParams := r.URL.Query()
+		clientId = queryParams.Get(clientIdKey)
+		if clientId == "" {
+			wsp.ProxyErrorf(w, "Missing clientId value")
+			return "", fmt.Errorf("missing clientId value")
+		}
+	}
+	return clientId, nil
+}
+
 func GetDestinationUrl(w http.ResponseWriter, r *http.Request) (*url.URL, error) {
-	dstURL := r.Header.Get("X-PROXY-DESTINATION")
+	proxyDestinationKey := "X-PROXY-DESTINATION"
+	dstURL := r.Header.Get(proxyDestinationKey)
 	if dstURL == "" {
-		wsp.ProxyErrorf(w, "Missing X-PROXY-DESTINATION header")
-		return nil, fmt.Errorf("missing X-PROXY-DESTINATION header")
+		logger.Debug(LOG_TAG, "Missing X-PROXY-DESTINATION header, searching in query param")
+		//Checking in query params.
+		queryParams := r.URL.Query()
+		dstURL = queryParams.Get(proxyDestinationKey)
+
+		if dstURL == "" {
+			wsp.ProxyErrorf(w, "Missing X-PROXY-DESTINATION value")
+			return nil, fmt.Errorf("missing X-PROXY-DESTINATION value")
+		}
 	}
 	URL, err := url.Parse(dstURL)
 	if err != nil {
