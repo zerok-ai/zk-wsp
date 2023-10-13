@@ -7,7 +7,7 @@ SERVER_IMAGE = zk-wsp-server
 SERVER_ART_Repo_URI = $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(SERVER_IMAGE)
 SERVER_IMG = $(SERVER_ART_Repo_URI):$(SERVER_VERSION)
 
-CLIENT_VERSION = dev
+CLIENT_VERSION = multiarch
 CLIENT_IMAGE = zk-wsp-client
 CLIENT_ART_Repo_URI = $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(CLIENT_IMAGE)
 CLIENT_IMG = $(CLIENT_ART_Repo_URI):$(CLIENT_VERSION)
@@ -36,6 +36,15 @@ build-client:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o zk-wsp-client cmd/wsp_client/main.go
 	docker build -f Dockerfile-Client -t ${CLIENT_IMG} .
 	docker push ${CLIENT_IMG}
+
+.PHONY: build-client-multiarch
+build-client-multiarch:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-wsp-client-amd64 cmd/wsp_client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/zk-wsp-client-arm64 cmd/wsp_client/main.go
+	docker buildx create --use --platform=linux/arm64,linux/amd64 --name multi-platform-builder
+	docker buildx build --platform=linux/arm64,linux/amd64 --push \
+	--tag ${CLIENT_IMG} -f Dockerfile-Client .
+	docker buildx rm multi-platform-builder
 
 .PHONY: build-all
 build-all: build-client build-server

@@ -6,9 +6,5 @@ ssl/
 bin/
 vendor/
 
-## Built binaries
-/wsp_server
-/wsp_client
-
 # IntelliJ IDEA
 .idea

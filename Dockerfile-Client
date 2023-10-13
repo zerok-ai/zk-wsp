@@ -6,11 +6,15 @@ FROM alpine:latest
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go executable and config file
-COPY zk-wsp-client /app/myapp
+# Copy the Go executable and script file
+COPY bin/zk-wsp-client-arm64 /app/myapp-arm64
+COPY bin/zk-wsp-client-amd64 /app/myapp-amd64
+COPY wsp-client-start.sh /app/wsp-client-start.sh
 
 # Set executable permissions for the Go executable
-RUN chmod +x /app/myapp
+RUN chmod +x /app/myapp-arm64
+RUN chmod +x /app/myapp-amd64
+RUN chmod +x /app/wsp-client-start.sh
 
 # Run the Go executable
-CMD ["./myapp","-c","/opt/wsp-config.yaml"]
+CMD ["./wsp-client-start.sh"]
