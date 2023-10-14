@@ -14,4 +14,4 @@ COPY ${APP_FILE} /app/myapp
 RUN chmod +x /app/myapp
 
 # Run the Go executable
-CMD ["./myapp","-c","/opt/wsp-config.yaml"]
+CMD ["./myapp","-c","/opt/config.yaml"]
