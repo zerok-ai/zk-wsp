@@ -38,7 +38,7 @@ jobs:
       DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
       PROJECT_ID: ${{ needs.init.outputs.PROJECT_ID }}
       DOCKER_FILE_NAME: 'Dockerfile-Client'
-      MAKE_TARGET: 'ci-cd-build-client-multiarch'
+      MAKE_TARGET: 'ci-cd-build-client'
       APP_NAME_VAR: 'APP_NAME_CLIENT'
     secrets:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY_DEV }}

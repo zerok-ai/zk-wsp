@@ -7,19 +7,15 @@ FROM alpine:latest
 WORKDIR /app
 
 # amd64 is default architecture for the image.
+RUN echo "Copying Amd64 file."
 COPY bin/zk-wsp-client-amd64 /app/myapp-amd64
-COPY wsp-client-start.sh /app/wsp-client-start.sh
+COPY app-start.sh /app/app-start.sh
 
-# Set executable permissions for the Go executable
-RUN chmod +x /app/myapp-amd64
-RUN chmod +x /app/wsp-client-start.sh
+# The preceding star will make the file copy only if it exists
+COPY *bin/zk-wsp-client-arm64 /app/myapp-arm64
 
-# arm64 is optional architecture for the image.
-RUN if [ -f "bin/zk-wsp-client-arm64" ]; then \
-    COPY bin/zk-wsp-client-arm64 /app/myapp-arm64; \
-    RUN chmod +x /app/myapp-arm64; \
-fi
+RUN chmod +x /app/*
 
 
-# Run the Go executable
-CMD ["./wsp-client-start.sh"]
+# Run the start script
+CMD ["./app-start.sh","-amd64","myapp-amd64","-arm64","myapp-arm64","-c","/opt/wsp-config.yaml"]
