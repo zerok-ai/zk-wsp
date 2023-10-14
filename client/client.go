@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gorilla/websocket"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp"
 	"github.com/zerok-ai/zk-wsp/common"
 	"log"
@@ -17,13 +19,15 @@ type Client struct {
 	client *http.Client
 	dialer *websocket.Dialer
 
-	//This map contains pool for each target Id.
 	pool       *Pool
 	lock       sync.RWMutex
 	done       chan struct{}
 	httpServer *http.Server
 	ready      bool
+	killed     bool
 }
+
+var ZK_LOG_TAG = "WspClient"
 
 // NewClient creates a new Client.
 func NewClient(config *Config) (c *Client) {
@@ -46,7 +50,7 @@ func (c *Client) Start(ctx context.Context) {
 	r := http.NewServeMux()
 	//TODO: Validate the request method here.
 	r.HandleFunc("/request", c.Request)
-	r.HandleFunc("/status", c.Status)
+	r.HandleFunc("/healthz", c.Status)
 
 	c.httpServer = &http.Server{
 		Addr:    c.Config.GetAddr(),
@@ -65,7 +69,27 @@ func (c *Client) Status(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (c *Client) SendKillResponse(w http.ResponseWriter) {
+	responseObj := ClusterKillResponseObj{Killed: true}
+	resp := ClusterKillResponse{Payload: responseObj}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+	w.WriteHeader(200)
+}
+
 func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
+	// [0]: Check if the client is killed.
+	if c.killed {
+		c.SendKillResponse(w)
+		return
+	}
+
 	// [1]: Receive requests to be proxied
 	// Parse destination URL
 	URL, err := common.GetDestinationUrl(w, r)
@@ -91,8 +115,9 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 	// [3]: Send the request to the peer through the WebSocket connection.
 	if err := connection.ProxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
-		log.Println(err)
+		zklogger.Error(ZK_LOG_TAG, "Error while proxying request: %s", err.Error())
 		connection.Close()
+		c.pool.Remove(connection)
 
 		// Try to return an error to the client
 		// This might fail if response headers have already been sent

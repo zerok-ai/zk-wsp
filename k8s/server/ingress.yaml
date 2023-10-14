@@ -16,7 +16,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.loadcloud01.getanton.com
+    - host: api.avinpx07.getanton.com
       http:
         paths:
           - path: /register

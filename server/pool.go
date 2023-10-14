@@ -1,15 +1,16 @@
 package server
 
 import (
-	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+var LOG_TAG = "WspServerPool"
 
 // Pool handles all writeConnections from the peer.
 type Pool struct {
@@ -49,7 +50,7 @@ func (pool *Pool) AddConnection(ws *websocket.Conn, connectionType common.Connec
 		return
 	}
 
-	log.Printf("Adding new connection to pool from %s and type %d.\n", pool.clientId, connectionType)
+	zklogger.Debug(LOG_TAG, "Adding new connection to pool from %s and type %d.\n", pool.clientId, connectionType)
 	switch connectionType {
 	case common.Read:
 		connection := common.NewReadConnection(pool, common.IDLE)
@@ -62,14 +63,14 @@ func (pool *Pool) AddConnection(ws *websocket.Conn, connectionType common.Connec
 		pool.writeConnections = append(pool.writeConnections, connection)
 		go connection.Start()
 	default:
-		fmt.Println("Object is of unknown type")
+		zklogger.Error(LOG_TAG, "Object is of unknown type in Add connection method.")
 	}
 }
 
 // Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *common.WriteConnection) {
 	pool.idle <- connection
-	fmt.Println("Idle channel length is ", len(pool.idle))
+	zklogger.Debug(LOG_TAG, "Idle channel length is ", len(pool.idle))
 }
 
 // Clean removes dead connection from the pool
@@ -90,22 +91,22 @@ func (pool *Pool) Clean() {
 func (pool *Pool) CleanConnection(connection common.Connection, idle int) int {
 	lock := connection.GetLock()
 	lock.Lock()
+	defer lock.Unlock()
 	if connection.GetStatus() == common.IDLE {
 		idle++
 		if idle > pool.idleSize {
 			if int(time.Now().Sub(connection.IdleSince()).Seconds()) > pool.server.Config.IdleTimeout {
 				switch connection.(type) {
 				case *common.ReadConnection:
-					fmt.Println("Closing connection due to timeout and connType read")
+					zklogger.Debug(LOG_TAG, "Closing connection due to timeout and connType read")
 				case *common.WriteConnection:
-					fmt.Println("Closing connection due to timeout and connType write")
+					zklogger.Debug(LOG_TAG, "Closing connection due to timeout and connType write")
 				}
 				connection.CloseWithOutLock()
-				pool.Remove(connection)
+				pool.RemoveWithoutLock(connection)
 			}
 		}
 	}
-	lock.Unlock()
 	return idle
 }
 
@@ -133,7 +134,8 @@ func (pool *Pool) Shutdown() {
 		connection.Close()
 	}
 
-	pool.Clean()
+	pool.RemoveAllConnections()
+
 }
 
 func (pool *Pool) GetHttpClient() *http.Client {
@@ -144,40 +146,51 @@ func (pool *Pool) GetLock() *sync.RWMutex {
 	return &pool.lock
 }
 
+func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
+	switch c := (conn).(type) {
+	case *common.ReadConnection:
+		zklogger.Debug(LOG_TAG, "Removing read connection from pool")
+		filtered := make([]*common.ReadConnection, 0)
+		for _, i := range pool.readConnections {
+			if c != i {
+				filtered = append(filtered, i)
+			}
+		}
+		pool.readConnections = filtered
+		zklogger.Debug(LOG_TAG, "Read connections length in server is ", len(pool.readConnections))
+	case *common.WriteConnection:
+		zklogger.Debug(LOG_TAG, "Removing write connection from pool")
+		filtered := make([]*common.WriteConnection, 0)
+		for _, i := range pool.writeConnections {
+			if c != i {
+				filtered = append(filtered, i)
+			}
+		}
+		pool.writeConnections = filtered
+		zklogger.Debug(LOG_TAG, "Write connections length in server is ", len(pool.writeConnections))
+	default:
+		zklogger.Debug(LOG_TAG, "Object is of unknown type")
+	}
+}
+
 // Remove a connection from the pool
 func (pool *Pool) Remove(conn common.Connection) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-	switch c := (conn).(type) {
-	case *common.ReadConnection:
-		var filtered []*common.ReadConnection // == nil
-		for _, i := range pool.readConnections {
-			if c != i {
-				filtered = append(filtered, c)
-			}
-		}
-		pool.readConnections = filtered
-	case *common.WriteConnection:
-		var filtered []*common.WriteConnection // == nil
-		for _, i := range pool.writeConnections {
-			if c != i {
-				filtered = append(filtered, c)
-			}
-		}
-		pool.writeConnections = filtered
-	default:
-		fmt.Println("Object is of unknown type")
-	}
+	pool.RemoveWithoutLock(conn)
+}
 
+func (pool *Pool) RemoveAllConnections() {
+	pool.readConnections = make([]*common.ReadConnection, 0)
+	pool.writeConnections = make([]*common.WriteConnection, 0)
 }
 
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	connection, err := common.GetValueWithTimeout(pool.idle, pool.server.Config.GetTimeout())
 
 	if err == nil && connection.Take() {
 		return connection
 	}
+	zklogger.Error(LOG_TAG, "Error getting idle connection ", err)
 	return nil
 }

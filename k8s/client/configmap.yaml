@@ -1,7 +1,7 @@
 apiVersion: v1
 data:
-  wsp-config.yaml: |+
-    host: 127.0.0.1
+  config.yaml: |+
+    host: 0.0.0.0
     port : 8987
     timeout : 3000
     target:
@@ -10,8 +10,13 @@ data:
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
-    poolidlesize: 5
-    poolmaxsize: 100
+    poolIdleSize: 5
+    poolMaxSize: 100
+    maxRetryInterval: 300
+    defaultRetryInterval: 30
+    logs:
+      color: true
+      level: DEBUG
 kind: ConfigMap
 metadata:
   name: zk-wsp-client

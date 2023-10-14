@@ -1,6 +1,7 @@
 package server
 
 import (
+	logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 	"os"
 	"strconv"
 	"time"
@@ -16,13 +17,14 @@ type ZkCloudConfig struct {
 
 // Config configures an Server
 type Config struct {
-	Host        string        `yaml:"host"`
-	Port        int           `yaml:"port"`
-	Timeout     int           `yaml:"timeout"`
-	IdleTimeout int           `yaml:"idleTimeout"`
-	SecretKey   string        `yaml:"secretKey"`
-	PoolMaxSize int           `yaml:"poolMaxSize"`
-	ZkCloud     ZkCloudConfig `yaml:"zkcloud"`
+	Host        string                `yaml:"host"`
+	Port        int                   `yaml:"port"`
+	Timeout     int                   `yaml:"timeout"`
+	IdleTimeout int                   `yaml:"idleTimeout"`
+	SecretKey   string                `yaml:"secretKey"`
+	PoolMaxSize int                   `yaml:"poolMaxSize"`
+	ZkCloud     ZkCloudConfig         `yaml:"zkcloud"`
+	LogsConfig  logsConfig.LogsConfig `yaml:"logs"`
 }
 
 // GetAddr returns the address to specify a HTTP server address

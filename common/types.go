@@ -37,6 +37,7 @@ const (
 type ConnectionPool interface {
 	Offer(connection *WriteConnection)
 	Remove(conn Connection)
+	RemoveWithoutLock(conn Connection)
 	GetHttpClient() *http.Client
 	GetLock() *sync.RWMutex
 }

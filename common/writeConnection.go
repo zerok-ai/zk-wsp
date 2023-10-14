@@ -3,8 +3,8 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -37,6 +37,8 @@ type WriteConnection struct {
 	nextResponse chan chan io.Reader
 }
 
+var WRITE_LOG_TAG = "WriteConnection"
+
 func (connection *WriteConnection) GetStatus() int {
 	return connection.Status
 }
@@ -58,9 +60,10 @@ func (connection *WriteConnection) Start() {
 	connection.Release()
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Write connection crash recovered : %s", r)
+			zklogger.Error(LOG_TAG, "Write connection crash recovered : %s", r)
 		}
-		fmt.Println("Write connection ending.")
+		zklogger.Debug(LOG_TAG, "Write connection ending.")
+		(*connection.pool).Remove(connection)
 		connection.Close()
 	}()
 
@@ -124,13 +127,13 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	// }
 
 	// [2]: Send the HTTP request to the peer
-	// Send the serialized HTTP request to the the peer
-	fmt.Println("Sending the http request to peer.")
+	// Send the serialized HTTP request to the peer
+	zklogger.Debug(LOG_TAG, "Sending the http request to peer.")
 	if err := connection.ws.WriteMessage(websocket.TextMessage, jsonReq); err != nil {
 		return fmt.Errorf("unable to write request : %w", err)
 	}
 
-	// Pipe the HTTP request body to the the peer
+	// Pipe the HTTP request body to the peer
 	bodyWriter, err := connection.ws.NextWriter(websocket.BinaryMessage)
 	if err != nil {
 		return fmt.Errorf("unable to get request body writer : %w", err)
@@ -143,7 +146,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	}
 
 	// [3]: Wait the HTTP response is ready
-	fmt.Println("Waiting for http response.")
+	zklogger.Debug(LOG_TAG, "Waiting for http response.")
 	responseChannel := make(chan (io.Reader))
 	connection.nextResponse <- responseChannel
 	responseReader, ok := <-responseChannel
@@ -159,7 +162,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	// [4]: Read the HTTP response from the peer
 	// Get the serialized HTTP Response from the peer
 	jsonResponse, err := io.ReadAll(responseReader)
-	fmt.Println("Response received is ", jsonResponse)
+	zklogger.Debug(LOG_TAG, "Response received is ", jsonResponse)
 	if err != nil {
 		close(responseChannel)
 		return fmt.Errorf("unable to read http response : %w", err)
@@ -186,7 +189,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	// Get the HTTP Response body from the the peer
 	// To do so send a new channel to the read() goroutine
 	// to get the next message reader
-	fmt.Println("Waiting for http body.")
+	zklogger.Debug(LOG_TAG, "Waiting for http body.")
 	responseBodyChannel := make(chan (io.Reader))
 	connection.nextResponse <- responseBodyChannel
 	responseBodyReader, ok := <-responseBodyChannel
@@ -200,7 +203,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 
 	// [6]: Read the HTTP response body from the peer
 	// Pipe the HTTP response body right from the remote Proxy to the client
-	fmt.Println("Received response body.")
+	zklogger.Debug(LOG_TAG, "Received response body.")
 	if _, err := io.Copy(w, responseBodyReader); err != nil {
 		close(responseBodyChannel)
 		return fmt.Errorf("unable to pipe response body : %w", err)
@@ -249,7 +252,6 @@ func (connection *WriteConnection) Release() {
 func (connection *WriteConnection) Close() {
 	connection.lock.Lock()
 	defer connection.lock.Unlock()
-	(*connection.pool).Remove(connection)
 	connection.CloseWithOutLock()
 }
 
@@ -264,9 +266,12 @@ func (connection *WriteConnection) CloseWithOutLock() {
 
 	// Unlock a possible read() wild message
 	close(connection.nextResponse)
-
-	// Close the underlying TCP connection
-	connection.ws.Close()
+	if connection.ws != nil {
+		err := connection.ws.Close()
+		if err != nil {
+			zklogger.Error(LOG_TAG, "Error while closing read connection : ", err)
+		}
+	}
 }
 
 func (connection *WriteConnection) GetWs() *websocket.Conn {

@@ -7,10 +7,13 @@ SERVER_IMAGE = zk-wsp-server
 SERVER_ART_Repo_URI = $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(SERVER_IMAGE)
 SERVER_IMG = $(SERVER_ART_Repo_URI):$(SERVER_VERSION)
 
-CLIENT_VERSION = dev
+CLIENT_VERSION = multiarch
 CLIENT_IMAGE = zk-wsp-client
 CLIENT_ART_Repo_URI = $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(CLIENT_IMAGE)
 CLIENT_IMG = $(CLIENT_ART_Repo_URI):$(CLIENT_VERSION)
+
+BUILDER_NAME = multi-platform-builder
+
 
 LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
@@ -33,9 +36,20 @@ build-server:
 
 .PHONY: build-client
 build-client:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o wsp_client cmd/wsp_client/main.go
-	docker build -t ${CLIENT_IMG} . --build-arg APP_FILE=wsp_client
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-wsp-client-amd64 cmd/wsp_client/main.go
+	docker build -f Dockerfile-Client -t ${CLIENT_IMG} .
 	docker push ${CLIENT_IMG}
+
+.PHONY: build-client-multiarch
+build-client-multiarch:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-wsp-client-amd64 cmd/wsp_client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/zk-wsp-client-arm64 cmd/wsp_client/main.go
+	#Adding remove here again to account for the case when buildx was not removed in previous run.
+	docker buildx rm ${BUILDER_NAME} || true
+	docker buildx create --use --platform=linux/arm64,linux/amd64 --name ${BUILDER_NAME}
+	docker buildx build --platform=linux/arm64,linux/amd64 --push \
+	--tag ${CLIENT_IMG} -f Dockerfile-Client .
+	docker buildx rm ${BUILDER_NAME}
 
 .PHONY: build-all
 build-all: build-client build-server
@@ -67,3 +81,8 @@ uninstall-all: uninstall-client uninstall-server
 .PHONY: run-test-server
 run-test-server:
 	go run ./examples/test_api/main.go
+
+# ------- CI-CD ------------
+ci-cd-build-client:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-wsp-client-amd64 cmd/wsp_client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/zk-wsp-client-arm64 cmd/wsp_client/main.go

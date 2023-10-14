@@ -13,13 +13,13 @@ import (
 
 var ZK_LOG_TAG = "ZkAuthClient"
 
-func GetClientId(secretKey string, cfg *Config) (string, error) {
+func GetClientId(secretKey string, cfg *Config) (string, bool, error) {
 	wspLoginResponse, err := WspLogin(secretKey, cfg)
 	if err != nil || wspLoginResponse == nil {
 		zklogger.Debug(ZK_LOG_TAG, "Error while getting clientId.")
-		return "", err
+		return "", false, err
 	}
-	return wspLoginResponse.ClusterId, nil
+	return wspLoginResponse.ClusterId, wspLoginResponse.Killed, nil
 }
 
 // WspLogin This method will validate the cluster key and returns the cluster id.

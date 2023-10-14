@@ -7,6 +7,11 @@ spec:
     app: zk-wsp-client
   ports:
     - protocol: TCP
-      port: 8981
-      targetPort: 8981
+      port: 8987
+      targetPort: 8987
+      name: legacy
+    - protocol: TCP
+      port: 80
+      targetPort: 8987
+      name: default
   type: ClusterIP

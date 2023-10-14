@@ -1,0 +1,21 @@
+# Dockerfile
+
+# Use Alpine as the base image
+FROM alpine:latest
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# amd64 is default architecture for the image.
+RUN echo "Copying Amd64 file."
+COPY bin/zk-wsp-client-amd64 /app/myapp-amd64
+COPY app-start.sh /app/app-start.sh
+
+# The preceding star will make the file copy only if it exists
+COPY *bin/zk-wsp-client-arm64 /app/myapp-arm64
+
+RUN chmod +x /app/*
+
+
+# Run the start script
+CMD ["./app-start.sh","-amd64","myapp-amd64","-arm64","myapp-arm64","-c","/opt/config.yaml"]

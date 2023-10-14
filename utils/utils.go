@@ -3,28 +3,31 @@ package utils
 import (
 	"flag"
 	"fmt"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"gopkg.in/yaml.v3"
 	"os"
 )
+
+var LOG_TAG = "utils"
 
 func ProcessArgs(config interface{}) error {
 	filePath := flag.String("c", "", "config file path")
 	flag.Parse()
 
 	if *filePath == "" {
-		fmt.Println("Please provide a file path using the -c option.")
+		zklogger.Error(LOG_TAG, "Please provide a file path using the -c option.")
 		return fmt.Errorf("file path provided is empty")
 	}
 
 	fileContents, err := os.ReadFile(*filePath)
 	if err != nil {
-		fmt.Printf("Failed to read file: %s\n", err)
+		zklogger.Error(LOG_TAG, "Failed to read file: %s\n", err)
 		return err
 	}
 
 	err = yaml.Unmarshal(fileContents, config)
 	if err != nil {
-		fmt.Printf("Failed to unmarshal yaml: %s\n", err)
+		zklogger.Error(LOG_TAG, "Failed to unmarshal yaml: %s\n", err)
 		return err
 	}
 
