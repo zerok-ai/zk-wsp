@@ -6,18 +6,20 @@ FROM alpine:latest
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go executable and script file
-RUN if [ -f "bin/zk-wsp-client-arm64" ]; then \
-    COPY bin/zk-wsp-client-arm64 /app/myapp-arm64; \
-    RUN chmod +x /app/myapp-arm64; \
-fi
-
+# amd64 is default architecture for the image.
 COPY bin/zk-wsp-client-amd64 /app/myapp-amd64
 COPY wsp-client-start.sh /app/wsp-client-start.sh
 
 # Set executable permissions for the Go executable
 RUN chmod +x /app/myapp-amd64
 RUN chmod +x /app/wsp-client-start.sh
+
+# arm64 is optional architecture for the image.
+RUN if [ -f "bin/zk-wsp-client-arm64" ]; then \
+    COPY bin/zk-wsp-client-arm64 /app/myapp-arm64; \
+    RUN chmod +x /app/myapp-arm64; \
+fi
+
 
 # Run the Go executable
 CMD ["./wsp-client-start.sh"]
