@@ -18,4 +18,4 @@ RUN chmod +x /app/*
 
 
 # Run the start script
-CMD ["./app-start.sh","-amd64","myapp-amd64","-arm64","myapp-arm64","-c","/opt/wsp-config.yaml"]
+CMD ["./app-start.sh","-amd64","myapp-amd64","-arm64","myapp-arm64","-c","/opt/config.yaml"]

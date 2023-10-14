@@ -5,7 +5,7 @@ metadata:
   labels:
   {{- include "zk-wsp.labels" . | nindent 4 }}
 data:
-  wsp-config.yaml: |-
+  config.yaml: |-
     host: 0.0.0.0
     port : 8987
     timeout : 3000
