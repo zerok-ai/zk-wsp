@@ -24,12 +24,9 @@ zkWspClient:
   - port: 8987
     protocol: TCP
     targetPort: 8987
-<<<<<<< HEAD
-=======
     name: legacy
   - port: 80
     protocol: TCP
     targetPort: 8987
     name: default
->>>>>>> develop
   type: ClusterIP

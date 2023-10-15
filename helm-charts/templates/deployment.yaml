@@ -28,7 +28,7 @@ spec:
         - containerPort: 8987
         resources: {}
         volumeMounts:
-        - mountPath: /opt
+        - mountPath: /zk/config
           name: wsp-config
       volumes:
       - configMap:

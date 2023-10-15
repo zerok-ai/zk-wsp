@@ -18,7 +18,7 @@ spec:
           imagePullPolicy: Always
           volumeMounts:
             - name: server-config
-              mountPath: /opt
+              mountPath: /zk/config
           ports:
             - containerPort: 8989
       volumes:

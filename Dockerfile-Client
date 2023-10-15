@@ -4,18 +4,21 @@
 FROM alpine:latest
 
 # Set the working directory inside the container
-WORKDIR /app
+WORKDIR /zk
 
-# amd64 is default architecture for the image.
-RUN echo "Copying Amd64 file."
-COPY bin/zk-wsp-client-amd64 /app/myapp-amd64
-COPY app-start.sh /app/app-start.sh
+ENV exeBaseName=zk-wsp-client
 
-# The preceding star will make the file copy only if it exists
-COPY *bin/zk-wsp-client-arm64 /app/myapp-arm64
+# full path to the all the executables
+ENV exeAMD64="${exeBaseName}-amd64"
+ENV exeARM64="${exeBaseName}-arm64"
 
-RUN chmod +x /app/*
+# copy the executables
+COPY *"bin/$exeAMD64" .
+COPY *"bin/$exeARM64" .
 
+# copy the start script
+COPY app-start.sh .
+RUN chmod +x app-start.sh
 
-# Run the start script
-CMD ["./app-start.sh","-amd64","myapp-amd64","-arm64","myapp-arm64","-c","/opt/config.yaml"]
+# call the start script
+CMD ["sh","-c","./app-start.sh --amd64 ${exeAMD64} --arm64 ${exeARM64} -c config/config.yaml"]

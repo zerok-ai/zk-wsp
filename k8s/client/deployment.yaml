@@ -19,7 +19,7 @@ spec:
           imagePullPolicy: Always
           volumeMounts:
             - name: wsp-config
-              mountPath: /opt
+              mountPath: /zk/config
           ports:
             - containerPort: 8987
       volumes:
