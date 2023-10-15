@@ -20,5 +20,5 @@ data:
     maxRetryInterval: 300
     defaultRetryInterval: 30
     logs:
-      color: true
-      level: DEBUG
+      color: {{ .Values.serviceConfigs.logs.color }}
+      level: {{ .Values.serviceConfigs.logs.level }}

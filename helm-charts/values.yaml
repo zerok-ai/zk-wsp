@@ -30,3 +30,8 @@ zkWspClient:
     targetPort: 8987
     name: default
   type: ClusterIP
+
+serviceConfigs:
+  logs:
+    color: true
+    level: DEBUG
