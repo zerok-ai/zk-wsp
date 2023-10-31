@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: zk-secrets-role
+  name: zk-wsp-secrets-role
   namespace: zk-client
 rules:
   - apiGroups: [""]
