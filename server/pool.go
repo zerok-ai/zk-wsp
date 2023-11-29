@@ -185,6 +185,20 @@ func (pool *Pool) RemoveAllConnections() {
 	pool.writeConnections = make([]*common.WriteConnection, 0)
 }
 
+// GetAllBusyWriteConnections returns a busy connection from the pool
+func (pool *Pool) GetAllBusyWriteConnections() []*common.WriteConnection {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+
+	busy := make([]*common.WriteConnection, 0)
+	for _, connection := range pool.writeConnections {
+		if connection.GetStatus() == common.BUSY {
+			busy = append(busy, connection)
+		}
+	}
+	return busy
+}
+
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
 	connection, err := common.GetValueWithTimeout(pool.idle, pool.server.Config.GetTimeout())
 

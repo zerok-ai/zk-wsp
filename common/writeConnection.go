@@ -1,7 +1,9 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"io"
@@ -107,6 +109,38 @@ func (connection *WriteConnection) Start() {
 		// Wait for proxyRequest to close the channel
 		// this notify that it is done with the reader
 		<-c
+	}
+}
+
+func (connection *WriteConnection) SendPingMessage() error {
+	zklogger.Debug(WRITE_LOG_TAG, "Sending ping message to peer.")
+
+	err := connection.ws.WriteMessage(websocket.PingMessage, []byte{})
+	if err != nil {
+		return err
+	}
+
+	// Create a context with a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Set the pong handler
+	connection.ws.SetPongHandler(func(appData string) error {
+		cancel() // Cancel the context on receiving a pong
+		return nil
+	})
+
+	// Wait for the pong message or context timeout
+	select {
+	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			zklogger.Debug("Pong wait timeout")
+			return fmt.Errorf("pong wait timeout")
+		} else {
+			// Pong received before timeout
+			zklogger.Debug("Pong received")
+			return nil
+		}
 	}
 }
 

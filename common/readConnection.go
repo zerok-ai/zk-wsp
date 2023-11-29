@@ -56,6 +56,16 @@ func (connection *ReadConnection) Start() {
 
 	zklogger.Debug(LOG_TAG, "Read connection starting.")
 
+	connection.ws.SetPingHandler(func(appData string) error {
+		zklogger.Debug(LOG_TAG, "Received ping.")
+		// Respond with a pong message
+		if err := connection.ws.WriteMessage(websocket.PongMessage, []byte(appData)); err != nil {
+			// Handle error, possibly log it
+			return err
+		}
+		return nil
+	})
+
 	//TODO: Should this only be sent from client conns or even server conns?
 	// Keep connection alive
 	go func() {
