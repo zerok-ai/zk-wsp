@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
@@ -62,18 +61,20 @@ func (s *Server) Start() {
 		}
 	}()
 
+	connectionStatusHandler := NewClusterConnectionHandler(s.Config, s)
+
 	r := http.NewServeMux()
 	// but it is tightly coupled to the internal state of the Server.
 	//TODO: Validate the request method here.
 	r.HandleFunc("/register", s.Register)
 	r.HandleFunc("/request", s.Request)
 	r.HandleFunc("/status", s.status)
-	r.HandleFunc("/connectionStatus", s.connectionStatusForAllClusters)
 
 	s.server = &http.Server{
 		Addr:    s.Config.GetAddr(),
 		Handler: r,
 	}
+	connectionStatusHandler.StartPeriodicSync()
 	go func() { log.Fatal(s.server.ListenAndServe()) }()
 }
 
@@ -128,16 +129,18 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 // Request receives the WebSocket upgrade handshake request from wsp_client.
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
-	secretKey := r.Header.Get("X-SECRET-KEY")
-	clientId, killed, err := GetClientId(secretKey, s.Config)
-	if killed {
-		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
-		return
-	}
-	if err != nil {
-		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
-		return
-	}
+	//secretKey := r.Header.Get("X-SECRET-KEY")
+	//clientId, killed, err := GetClientId(secretKey, s.Config)
+	//if killed {
+	//	wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
+	//	return
+	//}
+	//if err != nil {
+	//	wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
+	//	return
+	//}
+
+	clientId := "4"
 
 	// 1. Upgrade a received HTTP request to a WebSocket connection
 	ws, err := s.upgrader.Upgrade(w, r, nil)
@@ -202,29 +205,10 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	zklogger.Debug(SERVER_LOG_TAG, "Adding connection done.")
 }
 
-func (s *Server) connectionStatusForAllClusters(w http.ResponseWriter, r *http.Request) {
-	zklogger.Debug(SERVER_LOG_TAG, "Received request for connection status for all clusters.")
-	allClientConnectionStatus := make([]ConnectionStatus, 0)
-	for clientId, _ := range s.pools {
-		state, err := s.getConnectionStatus(clientId)
-		if err != nil {
-			zklogger.Debug(SERVER_LOG_TAG, "Error while getting connection status for client ", clientId, " with error ", err)
-		}
-		if state {
-			zklogger.Debug(SERVER_LOG_TAG, "Connected status for client ", clientId)
-		} else {
-			zklogger.Debug(SERVER_LOG_TAG, "Not connected status for client ", clientId)
-		}
-		allClientConnectionStatus = append(allClientConnectionStatus, ConnectionStatus{ClientID: clientId, IsActive: state})
-	}
-	response, _ := json.Marshal(allClientConnectionStatus)
-	w.Write(response)
-}
-
 func (s *Server) getConnectionStatus(clientId string) (bool, error) {
 	pool := s.pools[clientId]
 	if pool == nil {
-		fmt.Println("No pool available for the target client.")
+		zklogger.Debug(SERVER_LOG_TAG, "No pool available for the target client.")
 		return false, fmt.Errorf("no pool available for the target client")
 	}
 
@@ -233,17 +217,17 @@ func (s *Server) getConnectionStatus(clientId string) (bool, error) {
 	if connection == nil {
 		if len(busyConnections) > 0 {
 			// It means that there is no idle connection. Assuming here that the cluster is connected since there are some busy connections.
-			fmt.Println("No idle write connection.")
+			zklogger.Debug(SERVER_LOG_TAG, "No idle write connection.")
 			return true, nil
 		} else {
 			// It means that there is no idle connection and no busy connections.
-			fmt.Println("No idle write connection and busy connections.")
+			zklogger.Debug(SERVER_LOG_TAG, "No idle write connection and busy connections.")
 			return false, fmt.Errorf("no idle or busy connection available for the target client")
 		}
 	}
 	err := connection.SendPingMessage()
 	if err != nil {
-		fmt.Println("Error while sending ping message.")
+		zklogger.Error(SERVER_LOG_TAG, "Error while sending ping message.")
 		return false, fmt.Errorf("error while sending ping message")
 	}
 	return true, nil

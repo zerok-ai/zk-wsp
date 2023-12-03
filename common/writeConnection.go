@@ -121,6 +121,7 @@ func (connection *WriteConnection) SendPingMessage() error {
 	}
 
 	// Create a context with a timeout
+	//TODO: Think and decide on a timeout value
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

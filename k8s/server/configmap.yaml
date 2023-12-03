@@ -10,6 +10,8 @@ data:
       host: zk-auth.zkcloud.svc.cluster.local
       port: 80
       loginPath: /v1/i/auth/wsplogin
+      connectionSyncInterval: 30
+      connectionSyncPath: /v1/i/clustermeta/updateConnection
     logs:
       color: true
       level: DEBUG

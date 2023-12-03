@@ -16,7 +16,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.democloud01.zerok.dev
+    - host: api.testacloud01.getanton.com
       http:
         paths:
           - path: /register

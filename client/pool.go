@@ -144,11 +144,11 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 			pool.writeConnections = append(pool.writeConnections, conn)
 			interfaceConn = conn
 		default:
-			fmt.Println("Object is of unknown type")
+			zklogger.Error(POOL_LOG_TAG, "Object is of unknown type")
 		}
 		err := Connect(interfaceConn, ctx, pool, connType)
 		if err != nil {
-			fmt.Println("Error while creating connection type ", connType, " error is ", err)
+			zklogger.Error(POOL_LOG_TAG, "Error while creating connection type ", connType, " error is ", err)
 			interfaceConn.Close()
 			pool.RemoveWithoutLock(interfaceConn)
 			return err
@@ -164,7 +164,7 @@ func (pool *Pool) add(conn common.Connection) {
 	case *common.WriteConnection:
 		pool.writeConnections = append(pool.writeConnections, c)
 	default:
-		fmt.Println("Object is of unknown type")
+		zklogger.Error(POOL_LOG_TAG, "Object is of unknown type")
 	}
 }
 

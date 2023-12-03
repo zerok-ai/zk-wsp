@@ -10,9 +10,11 @@ import (
 )
 
 type ZkCloudConfig struct {
-	Host      string `yaml:"host"`
-	Port      string `yaml:"port"`
-	LoginPath string `yaml:"loginPath"`
+	Host                   string `yaml:"host"`
+	Port                   string `yaml:"port"`
+	LoginPath              string `yaml:"loginPath"`
+	ConnectionSyncInterval int    `yaml:"connectionSyncInterval"`
+	ConnectionSyncPath     string `yaml:"connectionSyncPath"`
 }
 
 // Config configures an Server
