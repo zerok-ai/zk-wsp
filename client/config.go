@@ -40,7 +40,6 @@ func (c Config) GetAddr() string {
 // NewConfig creates a new ProxyConfig
 func NewConfig() (config *Config) {
 	config = new(Config)
-	//fmt.Println("Client id is ", config.ID)
 
 	config.Target = &TargetConfig{URL: "ws://127.0.0.1:8080/register", SecretKey: ""}
 	//TODO: We need to create separate pool size for write and read conns.

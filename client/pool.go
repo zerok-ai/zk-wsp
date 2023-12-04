@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-wsp/common"
 	"net/http"
@@ -171,7 +170,7 @@ func (pool *Pool) add(conn common.Connection) {
 // Offer offers an idle connection to the server.
 func (pool *Pool) Offer(connection *common.WriteConnection) {
 	pool.idle <- connection
-	fmt.Println("Idle channel length is ", len(pool.idle))
+	zklogger.Debug(POOL_LOG_TAG, "Idle channel length is ", len(pool.idle))
 }
 
 func (pool *Pool) RemoveAllConnections() {
@@ -182,7 +181,7 @@ func (pool *Pool) RemoveAllConnections() {
 func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 	switch c := (conn).(type) {
 	case *common.ReadConnection:
-		fmt.Println("Removing read connection from pool")
+		zklogger.Debug(POOL_LOG_TAG, "Removing read connection from pool")
 		filtered := make([]*common.ReadConnection, 0)
 		for _, i := range pool.readConnections {
 			if c != i {
@@ -190,9 +189,9 @@ func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 			}
 		}
 		pool.readConnections = filtered
-		fmt.Println("Read connections length in client is ", len(pool.readConnections))
+		zklogger.Debug(POOL_LOG_TAG, "Read connections length in client is ", len(pool.readConnections))
 	case *common.WriteConnection:
-		fmt.Println("Removing write connection from pool")
+		zklogger.Debug(POOL_LOG_TAG, "Removing write connection from pool")
 		filtered := make([]*common.WriteConnection, 0)
 		for _, i := range pool.writeConnections {
 			if c != i {
@@ -200,9 +199,9 @@ func (pool *Pool) RemoveWithoutLock(conn common.Connection) {
 			}
 		}
 		pool.writeConnections = filtered
-		fmt.Println("Write connections length in client is ", len(pool.writeConnections))
+		zklogger.Debug(POOL_LOG_TAG, "Write connections length in client is ", len(pool.writeConnections))
 	default:
-		fmt.Println("Object is of unknown type")
+		zklogger.Error(POOL_LOG_TAG, "Object is of unknown type")
 	}
 }
 

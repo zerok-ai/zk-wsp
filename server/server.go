@@ -259,7 +259,7 @@ func (s *Server) clean() {
 	}
 
 	s.pools = pools
-	//fmt.Println("Done with cleaning empty connections.")
+	//zklogger.Debug(SERVER_LOG_TAG,"Done with cleaning empty connections.")
 }
 
 // Shutdown stop the Server
