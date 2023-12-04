@@ -115,21 +115,24 @@ func (connection *WriteConnection) Start() {
 func (connection *WriteConnection) SendPingMessage() error {
 	zklogger.Debug(WRITE_LOG_TAG, "Sending ping message to peer.")
 
-	err := connection.ws.WriteMessage(websocket.PingMessage, []byte{})
-	if err != nil {
-		return err
-	}
-
 	// Create a context with a timeout
 	//TODO: Think and decide on a timeout value
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	defer func() {
+		cancel()
+		connection.Release()
+	}()
 
 	// Set the pong handler
 	connection.ws.SetPongHandler(func(appData string) error {
 		cancel() // Cancel the context on receiving a pong
 		return nil
 	})
+
+	err := connection.ws.WriteMessage(websocket.PingMessage, []byte{})
+	if err != nil {
+		return err
+	}
 
 	// Wait for the pong message or context timeout
 	select {

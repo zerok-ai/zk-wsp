@@ -206,14 +206,16 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getConnectionStatus(clientId string) (bool, error) {
+	zklogger.Debug(SERVER_LOG_TAG, "Getting connection status for client ", clientId)
 	pool := s.pools[clientId]
 	if pool == nil {
 		zklogger.Debug(SERVER_LOG_TAG, "No pool available for the target client.")
 		return false, fmt.Errorf("no pool available for the target client")
 	}
 
-	connection := pool.GetIdleWriteConnection()
 	busyConnections := pool.GetAllBusyWriteConnections()
+	connection := pool.GetIdleWriteConnection()
+	zklogger.Debug(SERVER_LOG_TAG, "Number of Busy connections are ", len(busyConnections))
 	if connection == nil {
 		if len(busyConnections) > 0 {
 			// It means that there is no idle connection. Assuming here that the cluster is connected since there are some busy connections.
