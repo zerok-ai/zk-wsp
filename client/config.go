@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+type WspLoginConfig struct {
+	Path                string `json:"path"`
+	MaxRetries          int    `json:"maxRetries"`
+	Host                string `json:"host"`
+	Port                string `json:"port"`
+	ClusterSecretName   string `yaml:"clusterSecretName"`
+	ClusterKeyData      string `yaml:"clusterKeyData"`
+	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
+}
+
 // Config configures an Proxy
 type Config struct {
 	Target               *TargetConfig         `yaml:"target"`
@@ -18,6 +28,7 @@ type Config struct {
 	MaxRetryInterval     int                   `yaml:"maxRetryInterval"`
 	DefaultRetryInterval int                   `yaml:"defaultRetryInterval"`
 	LogsConfig           logsConfig.LogsConfig `yaml:"logs"`
+	WspLogin             WspLoginConfig        `yaml:"wspLogin"`
 }
 
 type TargetConfig struct {

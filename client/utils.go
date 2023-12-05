@@ -39,7 +39,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	}
 
 	// Create a new TCP(/TLS) connection ( no use of net.http )
-	ws, response, err := pool.client.dialer.DialContext(
+	ws, response, err := pool.Client.dialer.DialContext(
 		ctx,
 		targetConfig.URL,
 		http.Header{"X-SECRET-KEY": {secretKey}},
@@ -73,7 +73,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	// Send the greeting message with proxy id and wanted pool size.
 	greeting := fmt.Sprintf(
 		"%d_%d",
-		pool.client.Config.PoolIdleSize,
+		pool.Client.Config.PoolIdleSize,
 		serverConnType,
 	)
 
@@ -83,4 +83,12 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	}
 
 	return nil
+}
+
+func RespCodeIsOk(status int) bool {
+	if status > 199 && status < 300 {
+		return true
+	}
+	return false
+
 }

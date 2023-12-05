@@ -13,7 +13,7 @@ var POOL_LOG_TAG = "ClientPool"
 
 // Pool manage a pool of connection to a remote Server
 type Pool struct {
-	client           *Client
+	Client           *Client
 	Target           *TargetConfig
 	secretKey        string
 	httpClient       *http.Client
@@ -29,7 +29,7 @@ type Pool struct {
 // NewPool creates a new Pool
 func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool) {
 	pool = new(Pool)
-	pool.client = client
+	pool.Client = client
 	pool.httpClient = client.client
 	pool.Target = target
 	pool.readConnections = make([]*common.ReadConnection, 0)
@@ -65,22 +65,22 @@ func (pool *Pool) startInternal(ctx context.Context) {
 	if err != nil {
 		if err == InvalidClusterKey {
 			zklogger.Error(POOL_LOG_TAG, "Invalid cluster key. Shutting down client.")
-			pool.client.Shutdown()
-			pool.client.killed = true
-			pool.client.ready = true
+			pool.Client.Shutdown()
+			pool.Client.killed = true
+			pool.Client.ready = true
 			return
 		}
 		pool.retryInterval = pool.retryInterval * 2
-		maxRetryInterval := time.Second * time.Duration(pool.client.Config.MaxRetryInterval)
+		maxRetryInterval := time.Second * time.Duration(pool.Client.Config.MaxRetryInterval)
 		if pool.retryInterval > maxRetryInterval {
 			pool.retryInterval = maxRetryInterval
 		}
 	} else {
-		pool.retryInterval = time.Second * time.Duration(pool.client.Config.DefaultRetryInterval)
+		pool.retryInterval = time.Second * time.Duration(pool.Client.Config.DefaultRetryInterval)
 	}
 	pool.ticker.Reset(pool.retryInterval)
-	if pool.client.ready == false && len(pool.idle) == pool.client.Config.PoolIdleSize {
-		pool.client.ready = true
+	if pool.Client.ready == false && len(pool.idle) == pool.Client.Config.PoolIdleSize {
+		pool.Client.ready = true
 	}
 }
 
@@ -121,11 +121,11 @@ func (pool *Pool) connector(ctx context.Context) error {
 
 func (pool *Pool) connectionsToCreate(poolSize *PoolSize) int {
 	// Create enough connection to fill the pool
-	toCreate := pool.client.Config.PoolIdleSize - poolSize.idle
+	toCreate := pool.Client.Config.PoolIdleSize - poolSize.idle
 
 	// Ensure to open at most PoolMaxSize readConnections
-	if poolSize.total+toCreate > pool.client.Config.PoolMaxSize {
-		toCreate = pool.client.Config.PoolMaxSize - poolSize.total
+	if poolSize.total+toCreate > pool.Client.Config.PoolMaxSize {
+		toCreate = pool.Client.Config.PoolMaxSize - poolSize.total
 	}
 	return toCreate
 }
@@ -270,7 +270,7 @@ func (pool *Pool) GetLock() *sync.RWMutex {
 func (pool *Pool) GetIdleWriteConnection() *common.WriteConnection {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-	connection, err := common.GetValueWithTimeout(pool.idle, pool.client.Config.GetTimeout())
+	connection, err := common.GetValueWithTimeout(pool.idle, pool.Client.Config.GetTimeout())
 
 	if err == nil && connection.Take() {
 		return connection
