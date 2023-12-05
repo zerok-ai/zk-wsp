@@ -17,12 +17,8 @@ var WSP_LOGIN_LOG_TAG = "WspLogin"
 
 var refreshTokenMutex sync.Mutex
 
-type RefreshTokenCallback func()
-
-var callbacks []RefreshTokenCallback
-
 type WspLogin struct {
-	TokenData        *TokenData
+	TokenData        *ClusterTokenData
 	zkConfig         Config
 	killed           bool
 	lastTokenRefresh time.Time

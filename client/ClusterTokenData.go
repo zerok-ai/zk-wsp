@@ -6,18 +6,17 @@ import (
 	"fmt"
 )
 
-type TokenData struct {
-	tokenString string `json:"token"`
-	expiresAt   int64  `json:"expiresAt"`
+type ClusterTokenData struct {
+	TokenString string `json:"token"`
 }
 
-func DecodeToken(base64Str string) (*TokenData, error) {
+func DecodeToken(base64Str string) (*ClusterTokenData, error) {
 	data, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding base64 string: %w", err)
 	}
 
-	var tokenData TokenData
+	var tokenData ClusterTokenData
 	err = json.Unmarshal(data, &tokenData)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)

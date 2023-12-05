@@ -14,6 +14,7 @@ type WspLoginConfig struct {
 	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
+	ValidateKeyPath     string `yaml:"validateKeyPath"`
 }
 
 // Config configures an Proxy
