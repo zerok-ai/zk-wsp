@@ -36,18 +36,19 @@ func (h *ClusterTokenHandler) StartPeriodicSync() {
 }
 
 func (h *ClusterTokenHandler) CheckExpiryAndUpdateClusterToken() {
+	err := h.validateKey.ValidateKeyWithZkCloud()
+	if err != nil {
+		zklogger.Error(ClusterTokenHandlerLogTag, "Error while validating wsp token :", err)
+		return
+	} else {
+		h.expiryTime = time.Now().Add(h.validateKey.ttl)
+	}
 	currentTime := time.Now()
 	if h.expiryTime.Sub(currentTime) < time.Hour {
 		err := h.wspLogin.RefreshWspToken()
 		if err != nil {
 			zklogger.Error(ClusterTokenHandlerLogTag, "Error while refreshing wsp token :", err)
 		}
-	}
-	err := h.validateKey.ValidateKeyWithZkCloud()
-	if err != nil {
-		zklogger.Error(ClusterTokenHandlerLogTag, "Error while validating wsp token :", err)
-	} else {
-		h.expiryTime = time.Now().Add(h.validateKey.ttl)
 	}
 	h.ResetTickerTime()
 }
