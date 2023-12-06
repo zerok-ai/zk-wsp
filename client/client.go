@@ -83,9 +83,9 @@ func (c *Client) SendKillResponse(w http.ResponseWriter) {
 		return
 	}
 
+	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResp)
-	w.WriteHeader(200)
 }
 
 func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
