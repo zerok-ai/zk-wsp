@@ -23,8 +23,9 @@ func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, e
 	}
 
 	logger.Debug(ZK_AUTH_LOG_TAG, "Sending validate key request to zk cloud with data ", string(data))
+	logger.Debug(ZK_AUTH_LOG_TAG, "endpoint is ", endpoint)
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(data))
 
 	if err != nil {
 		logger.Error(ZK_AUTH_LOG_TAG, "Error creating validate key request:", err)
