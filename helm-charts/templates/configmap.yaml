@@ -9,7 +9,9 @@ data:
     host: 0.0.0.0
     port : 8987
     timeout : 3000
-    wspLogin:
+     wspLogin:
+      host: api.testacloud01.getanton.com
+      port: 443
       path: /v1/o/auth/login
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
