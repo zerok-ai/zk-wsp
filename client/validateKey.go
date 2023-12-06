@@ -55,7 +55,7 @@ func (h *ValidateKey) ValidateKeyWithZkCloud() error {
 	if err2 != nil {
 		return err2
 	}
-	
-	h.ttl = time.Duration(apiResponse.Payload.Ttl) * time.Minute
+
+	h.ttl = time.Duration(apiResponse.Payload.Ttl) * time.Second
 	return nil
 }
