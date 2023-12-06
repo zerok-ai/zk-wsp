@@ -55,16 +55,17 @@ func (h *WspLogin) isKilled() bool {
 }
 
 func (h *WspLogin) RefreshWspToken() error {
-	logger.Info(WSP_LOGIN_LOG_TAG, "Request Wsp token.")
-	refreshTokenMutex.Lock()
-	defer refreshTokenMutex.Unlock()
-
-	if h.killed {
-		logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
-		return fmt.Errorf("cluster is killed")
-	}
-
-	return h.updateClusterKeyFromZkCloud()
+	//logger.Info(WSP_LOGIN_LOG_TAG, "Request Wsp token.")
+	//refreshTokenMutex.Lock()
+	//defer refreshTokenMutex.Unlock()
+	//
+	//if h.killed {
+	//	logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
+	//	return fmt.Errorf("cluster is killed")
+	//}
+	//
+	//return h.updateClusterKeyFromZkCloud()
+	return nil
 }
 
 func (h *WspLogin) updateClusterKeyFromZkCloud() error {
