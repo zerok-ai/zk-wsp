@@ -42,7 +42,6 @@ func NewServer(config *Config) (server *Server) {
 	server.upgrader = websocket.Upgrader{}
 	server.pools = make(map[string]*Pool)
 	server.done = make(chan struct{})
-
 	return server
 }
 
@@ -130,15 +129,18 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	secretKey := r.Header.Get("X-SECRET-KEY")
-	clientId, killed, err := GetClientId(secretKey, s.Config)
-	if killed {
-		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
-		return
-	}
+	baseURL := "http://" + s.Config.ZkCloud.Host + ":" + s.Config.ZkCloud.Port + s.Config.ZkCloud.LoginPath
+	response, err := common.ValidateKeyWithZkCloud(secretKey, baseURL)
 	if err != nil {
 		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
 		return
 	}
+	if !response.Payload.IsValid {
+		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
+		return
+	}
+	
+	clientId := response.Payload.ClusterId
 
 	// 1. Upgrade a received HTTP request to a WebSocket connection
 	ws, err := s.upgrader.Upgrade(w, r, nil)

@@ -20,7 +20,7 @@ var refreshTokenMutex sync.Mutex
 
 type WspLogin struct {
 	TokenData        *clientModel.ClusterKeyData
-	zkConfig         Config
+	zkConfig         *Config
 	killed           bool
 	lastTokenRefresh time.Time
 }
@@ -40,7 +40,7 @@ type WspLoginRequest struct {
 	ClusterKey string `json:"clusterKey"`
 }
 
-func CreateWspLogin(config Config) *WspLogin {
+func CreateWspLogin(config *Config) *WspLogin {
 	wspLogin := WspLogin{}
 
 	//Assigning initial values.
