@@ -129,18 +129,16 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 // Request receives the WebSocket upgrade handshake request from wsp_client.
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
-	//secretKey := r.Header.Get("X-SECRET-KEY")
-	//clientId, killed, err := GetClientId(secretKey, s.Config)
-	//if killed {
-	//	wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
-	//	return
-	//}
-	//if err != nil {
-	//	wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
-	//	return
-	//}
-
-	clientId := "4"
+	secretKey := r.Header.Get("X-SECRET-KEY")
+	clientId, killed, err := GetClientId(secretKey, s.Config)
+	if killed {
+		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
+		return
+	}
+	if err != nil {
+		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
+		return
+	}
 
 	// 1. Upgrade a received HTTP request to a WebSocket connection
 	ws, err := s.upgrader.Upgrade(w, r, nil)
