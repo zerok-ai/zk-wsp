@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var minimumInterval = 2 * time.Minute
+var minimumInterval = 5 * time.Minute
 
 var ClusterTokenHandlerLogTag = "ClusterTokenHandler"
 
@@ -31,7 +31,6 @@ func NewClusterTokenHandler(config *Config, wspLogin *WspLogin, validateKey *Val
 }
 
 func (h *ClusterTokenHandler) StartPeriodicSync() {
-	h.CheckExpiryAndUpdateClusterToken()
 	h.ticker = zktick.GetNewTickerTask("ClusterTokenHandler", h.timerInterval, h.CheckExpiryAndUpdateClusterToken)
 	h.ticker.Start()
 }

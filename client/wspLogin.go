@@ -64,19 +64,7 @@ func (h *WspLogin) RefreshWspToken() error {
 		return fmt.Errorf("cluster is killed")
 	}
 
-	maxRetries := h.zkConfig.WspLogin.MaxRetries
-	retryCount := 0
-
-	for retryCount <= maxRetries {
-		err2 := h.updateClusterKeyFromZkCloud()
-		if err2 != nil {
-			retryCount++
-		} else {
-			break
-		}
-	}
-
-	return nil
+	return h.updateClusterKeyFromZkCloud()
 }
 
 func (h *WspLogin) updateClusterKeyFromZkCloud() error {
