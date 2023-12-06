@@ -8,6 +8,8 @@ import (
 
 var minimumInterval = 2 * time.Minute
 
+var ClusterTokenHandlerLogTag = "ClusterTokenHandler"
+
 type ClusterTokenHandler struct {
 	config        *Config
 	ticker        *zktick.TickerTask
@@ -39,15 +41,12 @@ func (h *ClusterTokenHandler) CheckExpiryAndUpdateClusterToken() {
 	if h.expiryTime.Sub(currentTime) < 6*time.Hour {
 		err := h.wspLogin.RefreshWspToken()
 		if err != nil {
-			zklogger.Error(WSP_LOGIN_LOG_TAG, "Error while refreshing wsp token :", err)
-		} else {
-			//TODO: Update the key in secret.
-			h.expiryTime = time.Now().Add(minimumInterval)
+			zklogger.Error(ClusterTokenHandlerLogTag, "Error while refreshing wsp token :", err)
 		}
 	}
 	err := h.validateKey.ValidateKeyWithZkCloud()
 	if err != nil {
-		zklogger.Error(WSP_LOGIN_LOG_TAG, "Error while validating wsp token :", err)
+		zklogger.Error(ClusterTokenHandlerLogTag, "Error while validating wsp token :", err)
 	} else {
 		h.expiryTime = time.Now().Add(h.validateKey.ttl)
 	}
