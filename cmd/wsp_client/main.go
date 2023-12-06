@@ -28,7 +28,7 @@ func main() {
 	if config.Target.SecretKey == "" {
 		zklogger.Debug(LOG_TAG, "SecretKey is empty. Getting from secret in cluster.")
 		var err1 error
-		config.Target.SecretKey, err1 = common.GetSecretValue(config.Target.ClusterKeyNamespace, config.Target.ClusterSecretName, config.Target.ClusterKeyData)
+		config.Target.SecretKey, err1 = common.GetSecretValue(config.WspLogin.ClusterKeyNamespace, config.WspLogin.ClusterSecretName, config.WspLogin.ClusterKeyData)
 		if err1 != nil {
 			zklogger.Error(LOG_TAG, "Error while getting cluster key for target ", err1, " with url ", config.Target.URL)
 			return
