@@ -11,10 +11,12 @@ type WspLoginConfig struct {
 	MaxRetries          int    `json:"maxRetries"`
 	Host                string `json:"host"`
 	Port                string `json:"port"`
+	ValidateKeyPath     string `yaml:"validateKeyPath"`
 	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
+	KilledKey           string `yaml:"killedKey"`
+	ClusterIdKey        string `yaml:"clusterIdKey"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
-	ValidateKeyPath     string `yaml:"validateKeyPath"`
 }
 
 // Config configures an Proxy

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,32 @@ func GetK8sClient() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
+}
+
+func UpdateSecretValue(namespace, secretName string, newData map[string]string) error {
+	// Get the existing secret
+	clientset, err := GetK8sClient()
+	if err != nil {
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
+		return err
+	}
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get secret: %v", err)
+	}
+
+	for key, newValue := range newData {
+		// Update the secret data
+		secret.Data[key] = []byte(base64.StdEncoding.EncodeToString([]byte(newValue)))
+	}
+
+	// Update the secret in Kubernetes
+	_, err = clientset.CoreV1().Secrets(namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update secret: %v", err)
+	}
+
+	return nil
 }
 
 func GetSecretValue(namespace, secretName, dataKey string) (string, error) {

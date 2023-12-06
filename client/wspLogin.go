@@ -6,6 +6,7 @@ import (
 	"fmt"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	clientModel "github.com/zerok-ai/zk-utils-go/zkClient"
 	"io"
 	"net/http"
 	"strconv"
@@ -18,7 +19,7 @@ var WSP_LOGIN_LOG_TAG = "WspLogin"
 var refreshTokenMutex sync.Mutex
 
 type WspLogin struct {
-	TokenData        *ClusterTokenData
+	TokenData        *clientModel.ClusterKeyData
 	zkConfig         Config
 	killed           bool
 	lastTokenRefresh time.Time
@@ -149,9 +150,21 @@ func (h *WspLogin) updateClusterKeyFromZkCloud() error {
 	if apiResponse.Payload.Killed {
 		logger.Info(WSP_LOGIN_LOG_TAG, "Api response came as killed.")
 		h.killed = true
-		//TODO: Save kill information in secret.
 	}
-	tokenData, err := DecodeToken(apiResponse.Payload.ClusterKey)
+
+	//Saving data to secret
+	newData := map[string]string{}
+	newData[h.zkConfig.WspLogin.ClusterIdKey] = apiResponse.Payload.ClusterId
+	if h.killed {
+		newData[h.zkConfig.WspLogin.KilledKey] = "true"
+	} else {
+		newData[h.zkConfig.WspLogin.KilledKey] = "false"
+	}
+	newData[h.zkConfig.WspLogin.ClusterKeyData] = apiResponse.Payload.ClusterKey
+
+	err = UpdateSecretValue(h.zkConfig.WspLogin.ClusterKeyNamespace, h.zkConfig.WspLogin.ClusterSecretName, newData)
+
+	tokenData, err := clientModel.DecodeToken(apiResponse.Payload.ClusterKey)
 	if err != nil {
 		logger.Error(WSP_LOGIN_LOG_TAG, "Error while decoding token :", err)
 		return err
