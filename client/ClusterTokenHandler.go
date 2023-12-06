@@ -37,7 +37,7 @@ func (h *ClusterTokenHandler) StartPeriodicSync() {
 
 func (h *ClusterTokenHandler) CheckExpiryAndUpdateClusterToken() {
 	currentTime := time.Now()
-	if h.expiryTime.Sub(currentTime) < 6*time.Hour {
+	if h.expiryTime.Sub(currentTime) < time.Hour {
 		err := h.wspLogin.RefreshWspToken()
 		if err != nil {
 			zklogger.Error(ClusterTokenHandlerLogTag, "Error while refreshing wsp token :", err)
