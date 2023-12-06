@@ -86,7 +86,7 @@ func (h *WspLogin) updateClusterKeyFromZkCloud() error {
 		protocol = "https"
 	}
 	endpoint := protocol + "://" + h.zkConfig.WspLogin.Host + ":" + h.zkConfig.WspLogin.Port + h.zkConfig.WspLogin.Path
-	logger.Error(WSP_LOGIN_LOG_TAG, "Endpoint for wsp login api is ", endpoint)
+	logger.Debug(WSP_LOGIN_LOG_TAG, "Endpoint for wsp login api is ", endpoint)
 
 	clusterKey, err := GetSecretValue(h.zkConfig.WspLogin.ClusterKeyNamespace, h.zkConfig.WspLogin.ClusterSecretName, h.zkConfig.WspLogin.ClusterKeyData)
 

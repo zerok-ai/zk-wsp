@@ -130,6 +130,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	secretKey := r.Header.Get("X-SECRET-KEY")
 	baseURL := "http://" + s.Config.ZkCloud.Host + ":" + s.Config.ZkCloud.Port + s.Config.ZkCloud.LoginPath
+	zklogger.Debug(SERVER_LOG_TAG, "Base url for login is ", baseURL)
+	zklogger.Debug(SERVER_LOG_TAG, "Secret key is ", secretKey)
 	response, err := common.ValidateKeyWithZkCloud(secretKey, baseURL)
 	if err != nil {
 		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
@@ -139,7 +141,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		wsp.InvalidClusterErrorf(w, "Secret key is invalid or killed.")
 		return
 	}
-	
+
 	clientId := response.Payload.ClusterId
 
 	// 1. Upgrade a received HTTP request to a WebSocket connection
