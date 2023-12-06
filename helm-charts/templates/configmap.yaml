@@ -9,12 +9,17 @@ data:
     host: 0.0.0.0
     port : 8987
     timeout : 3000
-    target:
-      url: "wss://api.{{ .Values.global.zkcloud.host }}:{{ .Values.global.zkcloud.port }}/register"
+    wspLogin:
+      path: /v1/o/auth/login
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
+      killedKey: killed
+      clusterIdKey: clusterId
       clusterKeyNamespace: zk-client
+      validateKeyPath: /v1/o/validate
       maxRetries: 3
+    target:
+      url: "wss://api.{{ .Values.global.zkcloud.host }}:{{ .Values.global.zkcloud.port }}/register"
     poolIdleSize: 5
     poolMaxSize: 100
     maxRetryInterval: 300

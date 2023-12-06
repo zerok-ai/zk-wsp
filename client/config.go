@@ -35,12 +35,8 @@ type Config struct {
 }
 
 type TargetConfig struct {
-	URL                 string `yaml:"url"`
-	ClusterSecretName   string `yaml:"clusterSecretName"`
-	ClusterKeyData      string `yaml:"clusterKeyData"`
-	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
-	MaxRetries          int    `yaml:"maxRetries"`
-	SecretKey           string `yaml:"secretKey"`
+	URL       string `yaml:"url"`
+	SecretKey string `yaml:"secretKey"`
 }
 
 func (c Config) GetTimeout() time.Duration {
