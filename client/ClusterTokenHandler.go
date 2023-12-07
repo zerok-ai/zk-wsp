@@ -36,21 +36,34 @@ func (h *ClusterTokenHandler) StartPeriodicSync() {
 }
 
 func (h *ClusterTokenHandler) CheckExpiryAndUpdateClusterToken() {
-	err := h.validateKey.ValidateKeyWithZkCloud()
+	err := h.updateExpiry()
 	if err != nil {
-		zklogger.Error(ClusterTokenHandlerLogTag, "Error while validating wsp token :", err)
-		return
-	} else {
-		h.expiryTime = time.Now().Add(h.validateKey.ttl)
+		zklogger.Error(ClusterTokenHandlerLogTag, "Error while updating expiry :", err)
 	}
 	currentTime := time.Now()
 	if h.expiryTime.Sub(currentTime) < time.Hour {
 		err := h.wspLogin.RefreshWspToken()
 		if err != nil {
 			zklogger.Error(ClusterTokenHandlerLogTag, "Error while refreshing wsp token :", err)
+		} else {
+			err := h.updateExpiry()
+			if err != nil {
+				zklogger.Error(ClusterTokenHandlerLogTag, "Error while updating expiry :", err)
+			}
 		}
 	}
 	h.ResetTickerTime()
+}
+
+func (h *ClusterTokenHandler) updateExpiry() error {
+	err := h.validateKey.ValidateKeyWithZkCloud()
+	if err != nil {
+		zklogger.Error(ClusterTokenHandlerLogTag, "Error while validating wsp token :", err)
+		return err
+	} else {
+		h.expiryTime = time.Now().Add(h.validateKey.ttl)
+	}
+	return nil
 }
 
 // ResetTickerTime resets the ticker's time interval
