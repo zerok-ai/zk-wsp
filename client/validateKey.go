@@ -8,9 +8,14 @@ import (
 
 type ValidateKey struct {
 	ClusterKey string
+	ClusterId  string
 	zkConfig   *Config
 	killed     bool
 	ttl        time.Duration
+}
+
+func (h *ValidateKey) GetClusterId() string {
+	return h.ClusterId
 }
 
 func CreateValidateKey(config *Config) *ValidateKey {
@@ -57,5 +62,6 @@ func (h *ValidateKey) ValidateKeyWithZkCloud() error {
 	}
 
 	h.ttl = time.Duration(apiResponse.Payload.Ttl) * time.Second
+	h.ClusterId = apiResponse.Payload.ClusterId
 	return nil
 }

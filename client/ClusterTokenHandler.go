@@ -42,7 +42,7 @@ func (h *ClusterTokenHandler) CheckExpiryAndUpdateClusterToken() {
 	}
 	currentTime := time.Now()
 	if h.expiryTime.Sub(currentTime) < time.Hour {
-		err := h.wspLogin.RefreshWspToken()
+		err := h.wspLogin.RefreshWspToken(h.validateKey.GetClusterId())
 		if err != nil {
 			zklogger.Error(ClusterTokenHandlerLogTag, "Error while refreshing wsp token :", err)
 		} else {

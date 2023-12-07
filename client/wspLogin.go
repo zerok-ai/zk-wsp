@@ -54,21 +54,20 @@ func (h *WspLogin) isKilled() bool {
 	return h.killed
 }
 
-func (h *WspLogin) RefreshWspToken() error {
-	//logger.Info(WSP_LOGIN_LOG_TAG, "Request Wsp token.")
-	//refreshTokenMutex.Lock()
-	//defer refreshTokenMutex.Unlock()
-	//
-	//if h.killed {
-	//	logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
-	//	return fmt.Errorf("cluster is killed")
-	//}
-	//
-	//return h.updateClusterKeyFromZkCloud()
-	return nil
+func (h *WspLogin) RefreshWspToken(clusterId string) error {
+	logger.Info(WSP_LOGIN_LOG_TAG, "Request Wsp token.")
+	refreshTokenMutex.Lock()
+	defer refreshTokenMutex.Unlock()
+
+	if h.killed {
+		logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
+		return fmt.Errorf("cluster is killed")
+	}
+	
+	return h.updateClusterKeyFromZkCloud(clusterId)
 }
 
-func (h *WspLogin) updateClusterKeyFromZkCloud() error {
+func (h *WspLogin) updateClusterKeyFromZkCloud(clusterId string) error {
 	port := h.zkConfig.WspLogin.Port
 	protocol := "http"
 	if port == "443" {
@@ -144,7 +143,7 @@ func (h *WspLogin) updateClusterKeyFromZkCloud() error {
 
 	//Saving data to secret
 	newData := map[string]string{}
-	newData[h.zkConfig.WspLogin.ClusterIdKey] = apiResponse.Payload.ClusterId
+	newData[h.zkConfig.WspLogin.ClusterIdKey] = clusterId
 	if h.killed {
 		newData[h.zkConfig.WspLogin.KilledKey] = "true"
 	} else {
