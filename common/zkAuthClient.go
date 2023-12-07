@@ -45,6 +45,9 @@ func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, e
 	}
 	defer resp.Body.Close()
 
+	logger.Debug(ZK_AUTH_LOG_TAG, "response is ", resp)
+	logger.Debug(ZK_AUTH_LOG_TAG, "response code is ", resp.StatusCode)
+
 	if !RespCodeIsOk(resp.StatusCode) {
 		message := "response code is not ok for validate key api - " + strconv.Itoa(resp.StatusCode)
 		logger.Error(ZK_AUTH_LOG_TAG, message)

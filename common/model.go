@@ -8,7 +8,7 @@ type ValidateKeyResponse struct {
 }
 
 type ValidateKeyObj struct {
-	IsValid   bool   `json:"is_valid"`
+	IsValid   bool   `json:"isValid"`
 	Ttl       int    `json:"ttl"`
 	ClusterId string `json:"clusterId"`
 }
