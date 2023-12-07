@@ -185,20 +185,18 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	zklogger.Debug(SERVER_LOG_TAG, "Executing next line after lock.")
 
-	clientIdStr := strconv.FormatInt(clientId, 10)
-
 	var pool *Pool
 	// There is no need to create a new pool,
 	// if it is already registered in current pools.
 	for _, p := range s.pools {
-		if p.clientId == clientIdStr {
+		if p.clientId == clientId {
 			pool = p
 			break
 		}
 	}
 	if pool == nil {
-		pool = NewPool(s, clientIdStr)
-		s.pools[clientIdStr] = pool
+		pool = NewPool(s, clientId)
+		s.pools[clientId] = pool
 	}
 
 	// update pool idleSize
