@@ -148,7 +148,6 @@ func (connection *WriteConnection) SendPingMessage() error {
 	}
 }
 
-// TODO: Add access to the request in wsp-client.
 // Proxy a HTTP request through the Proxy over the websocket connection
 func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.Request) (responseCode int, err error) {
 
