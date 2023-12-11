@@ -27,7 +27,7 @@ type Pool struct {
 }
 
 // NewPool creates a new Pool
-func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool) {
+func NewPool(client *Client, target *TargetConfig) (pool *Pool) {
 	pool = new(Pool)
 	pool.Client = client
 	pool.httpClient = client.client
@@ -35,7 +35,6 @@ func NewPool(client *Client, target *TargetConfig, secretKey string) (pool *Pool
 	pool.readConnections = make([]*common.ReadConnection, 0)
 	pool.writeConnections = make([]*common.WriteConnection, 0)
 	pool.idle = make(chan *common.WriteConnection, client.Config.PoolMaxSize)
-	pool.secretKey = secretKey
 	pool.done = make(chan struct{})
 	pool.ticker = time.NewTicker(time.Second * time.Duration(client.Config.DefaultRetryInterval))
 	pool.retryInterval = time.Second * time.Duration(client.Config.DefaultRetryInterval)
@@ -145,7 +144,7 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		default:
 			zklogger.Error(POOL_LOG_TAG, "Object is of unknown type")
 		}
-		err := Connect(interfaceConn, ctx, pool, connType)
+		err := Connect(interfaceConn, ctx, pool, connType, pool.Client.wspLogin.GetAuthToken())
 		if err != nil {
 			zklogger.Error(POOL_LOG_TAG, "Error while creating connection type ", connType, " error is ", err)
 			interfaceConn.Close()

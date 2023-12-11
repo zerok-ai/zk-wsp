@@ -11,8 +11,8 @@ import (
 
 var UTILS_LOG_TAG = "ClientUtils"
 
-func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType) error {
-	err := connectInternal(ctx, interfaceConn, pool, connType)
+func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType, token string) error {
+	err := connectInternal(ctx, interfaceConn, pool, connType, token)
 	if err != nil {
 		zklogger.Error(UTILS_LOG_TAG, "Unable to connect to %s : %s", pool.Target, err)
 		return err
@@ -22,7 +22,7 @@ func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, c
 }
 
 // Connect to the IsolatorServer using a HTTP websocket
-func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType) (err error) {
+func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType, token string) (err error) {
 	if pool == nil {
 		zklogger.Error(UTILS_LOG_TAG, "Aborting connection since pool is nil.")
 	}
@@ -31,7 +31,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 
 	targetConfig := pool.Target
 
-	secretKey := targetConfig.SecretKey
+	secretKey := token
 
 	if err != nil {
 		zklogger.Error(UTILS_LOG_TAG, "Error while getting cluster key for ws connection to server", err, connectionType)

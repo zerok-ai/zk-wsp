@@ -31,21 +31,24 @@ type Client struct {
 var ZK_LOG_TAG = "WspClient"
 
 // NewClient creates a new Client.
-func NewClient(config *Config) (c *Client) {
-	c = new(Client)
+func NewClient(config *Config) *Client {
+	c := new(Client)
 	c.Config = config
 	c.client = &http.Client{}
 	c.dialer = &websocket.Dialer{}
 	c.done = make(chan struct{})
 	c.ready = false
 	c.wspLogin = CreateWspLogin(config)
-	return
+	if c.wspLogin == nil {
+		return nil
+	}
+	return c
 }
 
 // Start the Proxy
 func (c *Client) Start(ctx context.Context) {
 	target := c.Config.Target
-	pool := NewPool(c, target, c.Config.SecretKey)
+	pool := NewPool(c, target)
 	c.pool = pool
 	pool.Start(ctx)
 

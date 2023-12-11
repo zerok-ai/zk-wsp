@@ -23,6 +23,10 @@ type WspLogin struct {
 	refreshTokenMutex sync.Mutex
 }
 
+func (h *WspLogin) GetAuthToken() string {
+	return h.authToken
+}
+
 type WspLoginResponse struct {
 	Payload WspTokenObj         `json:"payload"`
 	Error   *zkhttp.ZkHttpError `json:"error,omitempty"`
@@ -93,6 +97,8 @@ func (h *WspLogin) updateAuthTokenFromZkCloud() error {
 
 	clusterKey, err := GetSecretValue(h.zkConfig.WspLogin.ClusterKeyNamespace, h.zkConfig.WspLogin.ClusterSecretName, h.zkConfig.WspLogin.ClusterKeyData)
 
+	logger.Debug(WSP_LOGIN_LOG_TAG, "Cluster key is ", clusterKey)
+
 	if err != nil {
 		logger.Error(WSP_LOGIN_LOG_TAG, "Error while getting cluster key from secrets :", err)
 		return err
@@ -158,6 +164,9 @@ func (h *WspLogin) updateAuthTokenFromZkCloud() error {
 
 	h.authToken = apiResponse.Payload.AuthToken
 	h.clusterId = apiResponse.Payload.ClusterId
+
+	logger.Debug(WSP_LOGIN_LOG_TAG, "AuthToken for wsp login api is ", h.authToken)
+	logger.Debug(WSP_LOGIN_LOG_TAG, "ClusterId for wsp login api is ", h.clusterId)
 
 	return nil
 }

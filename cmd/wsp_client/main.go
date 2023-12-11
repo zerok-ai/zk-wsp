@@ -36,6 +36,10 @@ func main() {
 	}
 
 	proxy := client.NewClient(config)
+	if proxy == nil {
+		zklogger.Error(LOG_TAG, "Unable to create wsp client. Stopping wsp client.")
+		return
+	}
 	proxy.Start(context.Background())
 
 	// Wait signals
