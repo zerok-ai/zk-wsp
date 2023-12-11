@@ -102,6 +102,7 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.URL = URL
+	r.Header.Set("Operator-Auth-Token", c.wspLogin.GetAuthToken())
 
 	if c.pool == nil {
 		wsp.ProxyErrorf(w, "No pool available for the target client.")
