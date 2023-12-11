@@ -6,12 +6,10 @@ import (
 	"fmt"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
-	clientModel "github.com/zerok-ai/zk-utils-go/zkClient"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 )
 
 var WSP_LOGIN_LOG_TAG = "WspLogin"
@@ -19,10 +17,10 @@ var WSP_LOGIN_LOG_TAG = "WspLogin"
 var refreshTokenMutex sync.Mutex
 
 type WspLogin struct {
-	TokenData        *clientModel.ClusterKeyData
-	zkConfig         *Config
-	killed           bool
-	lastTokenRefresh time.Time
+	authToken string
+	clusterId string
+	zkConfig  *Config
+	killed    bool
 }
 
 type WspLoginResponse struct {
@@ -31,9 +29,9 @@ type WspLoginResponse struct {
 }
 
 type WspTokenObj struct {
-	ClusterKey string `json:"clusterKey"`
-	ClusterId  string `json:"clusterId"`
-	Killed     bool   `json:"killed"`
+	AuthToken string `json:"accessToken"`
+	ClusterId string `json:"clusterId"`
+	Killed    bool   `json:"killed"`
 }
 
 type WspLoginRequest struct {
@@ -63,11 +61,11 @@ func (h *WspLogin) RefreshWspToken(clusterId string) error {
 		logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
 		return fmt.Errorf("cluster is killed")
 	}
-	
-	return h.updateClusterKeyFromZkCloud(clusterId)
+
+	return h.updateAuthTokenFromZkCloud(clusterId)
 }
 
-func (h *WspLogin) updateClusterKeyFromZkCloud(clusterId string) error {
+func (h *WspLogin) updateAuthTokenFromZkCloud(clusterId string) error {
 	port := h.zkConfig.WspLogin.Port
 	protocol := "http"
 	if port == "443" {
@@ -131,7 +129,7 @@ func (h *WspLogin) updateClusterKeyFromZkCloud(clusterId string) error {
 	}
 
 	if apiResponse.Error != nil {
-		message := "found error in operator login api response " + apiResponse.Error.Message
+		message := "found error in wsp login api response " + apiResponse.Error.Message
 		logger.Error(WSP_LOGIN_LOG_TAG, message)
 		return fmt.Errorf(message)
 	}
@@ -141,23 +139,8 @@ func (h *WspLogin) updateClusterKeyFromZkCloud(clusterId string) error {
 		h.killed = true
 	}
 
-	//Saving data to secret
-	newData := map[string]string{}
-	newData[h.zkConfig.WspLogin.ClusterIdKey] = clusterId
-	if h.killed {
-		newData[h.zkConfig.WspLogin.KilledKey] = "true"
-	} else {
-		newData[h.zkConfig.WspLogin.KilledKey] = "false"
-	}
-	newData[h.zkConfig.WspLogin.ClusterKeyData] = apiResponse.Payload.ClusterKey
+	h.authToken = apiResponse.Payload.AuthToken
+	h.clusterId = apiResponse.Payload.ClusterId
 
-	err = UpdateSecretValue(h.zkConfig.WspLogin.ClusterKeyNamespace, h.zkConfig.WspLogin.ClusterSecretName, newData)
-
-	tokenData, err := clientModel.DecodeToken(apiResponse.Payload.ClusterKey)
-	if err != nil {
-		logger.Error(WSP_LOGIN_LOG_TAG, "Error while decoding token :", err)
-		return err
-	}
-	h.TokenData = tokenData
 	return nil
 }

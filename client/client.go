@@ -19,13 +19,13 @@ type Client struct {
 	client *http.Client
 	dialer *websocket.Dialer
 
-	pool                *Pool
-	lock                sync.RWMutex
-	done                chan struct{}
-	httpServer          *http.Server
-	ready               bool
-	killed              bool
-	clusterTokenHandler *ClusterTokenHandler
+	pool       *Pool
+	lock       sync.RWMutex
+	done       chan struct{}
+	httpServer *http.Server
+	ready      bool
+	killed     bool
+	wspLogin   *WspLogin
 }
 
 var ZK_LOG_TAG = "WspClient"
@@ -38,9 +38,7 @@ func NewClient(config *Config) (c *Client) {
 	c.dialer = &websocket.Dialer{}
 	c.done = make(chan struct{})
 	c.ready = false
-	wspLogin := CreateWspLogin(config)
-	validateKey := CreateValidateKey(config)
-	c.clusterTokenHandler = NewClusterTokenHandler(config, wspLogin, validateKey)
+	c.wspLogin = CreateWspLogin(config)
 	return
 }
 
@@ -60,7 +58,6 @@ func (c *Client) Start(ctx context.Context) {
 		Addr:    c.Config.GetAddr(),
 		Handler: r,
 	}
-	c.clusterTokenHandler.StartPeriodicSync()
 	go func() { log.Fatal(c.httpServer.ListenAndServe()) }()
 }
 
