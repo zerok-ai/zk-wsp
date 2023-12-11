@@ -12,17 +12,9 @@ import (
 
 var ZK_AUTH_LOG_TAG = "ZkAuthClient"
 
-func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, error) {
-	requestPayload := ValidateKeyRequest{ClusterKey: clusterKey}
+func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateAccessTokenResponse, error) {
+	requestPayload := ValidateAccessTokenRequest{AccessToken: clusterKey}
 
-	//data, err := json.Marshal(requestPayload)
-	//
-	//if err != nil {
-	//	logger.Error(ZK_AUTH_LOG_TAG, "Error while creating payload for validate key request:", err)
-	//	return ValidateKeyResponse{}, err
-	//}
-
-	//logger.Debug(ZK_AUTH_LOG_TAG, "Sending validate key request to zk cloud with data ", string(data))
 	logger.Debug(ZK_AUTH_LOG_TAG, "endpoint is ", endpoint)
 
 	payloadBuf := new(bytes.Buffer)
@@ -32,7 +24,7 @@ func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, e
 
 	if err != nil {
 		logger.Error(ZK_AUTH_LOG_TAG, "Error creating validate key request:", err)
-		return ValidateKeyResponse{}, err
+		return ValidateAccessTokenResponse{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -41,7 +33,7 @@ func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, e
 
 	if err != nil {
 		logger.Error(ZK_AUTH_LOG_TAG, "Error sending request for validate key api :", err)
-		return ValidateKeyResponse{}, err
+		return ValidateAccessTokenResponse{}, err
 	}
 	defer resp.Body.Close()
 
@@ -51,28 +43,28 @@ func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateKeyResponse, e
 	if !RespCodeIsOk(resp.StatusCode) {
 		message := "response code is not ok for validate key api - " + strconv.Itoa(resp.StatusCode)
 		logger.Error(ZK_AUTH_LOG_TAG, message)
-		return ValidateKeyResponse{}, fmt.Errorf(message)
+		return ValidateAccessTokenResponse{}, fmt.Errorf(message)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		logger.Error(ZK_AUTH_LOG_TAG, "Error reading response from validate key api :", err)
-		return ValidateKeyResponse{}, err
+		return ValidateAccessTokenResponse{}, err
 	}
 
-	var apiResponse ValidateKeyResponse
+	var apiResponse ValidateAccessTokenResponse
 	err = json.Unmarshal(body, &apiResponse)
 
 	if err != nil {
 		logger.Error(ZK_AUTH_LOG_TAG, "Error while unmarshalling rules validate key api response :", err)
-		return ValidateKeyResponse{}, err
+		return ValidateAccessTokenResponse{}, err
 	}
 
 	if apiResponse.Error != nil {
 		message := "found error in validate key api response " + apiResponse.Error.Message
 		logger.Error(ZK_AUTH_LOG_TAG, message)
-		return ValidateKeyResponse{}, fmt.Errorf(message)
+		return ValidateAccessTokenResponse{}, fmt.Errorf(message)
 	}
 	return apiResponse, nil
 }

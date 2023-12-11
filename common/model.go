@@ -2,17 +2,17 @@ package common
 
 import zkhttp "github.com/zerok-ai/zk-utils-go/http"
 
-type ValidateKeyResponse struct {
-	Payload ValidateKeyObj      `json:"payload"`
-	Error   *zkhttp.ZkHttpError `json:"error,omitempty"`
+type ValidateAccessTokenResponse struct {
+	Payload ValidateAccessTokenObj `json:"payload"`
+	Error   *zkhttp.ZkHttpError    `json:"error,omitempty"`
 }
 
-type ValidateKeyObj struct {
+type ValidateAccessTokenObj struct {
 	IsValid   bool   `json:"isValid"`
 	Ttl       int    `json:"ttl"`
 	ClusterId string `json:"clusterId"`
 }
 
-type ValidateKeyRequest struct {
-	ClusterKey string `json:"clusterKey"`
+type ValidateAccessTokenRequest struct {
+	AccessToken string `json:"accessToken"`
 }
