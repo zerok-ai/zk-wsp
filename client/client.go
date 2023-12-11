@@ -129,7 +129,7 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 
 	if statusCode == authTokenUnAuthorizedCode || statusCode == authTokenSessionExpiredCode {
 		go func() {
-			err := c.wspLogin.RefreshAuthToken()
+			err := c.wspLogin.RefreshWspToken()
 			if err != nil {
 				zklogger.Error(ZK_LOG_TAG, "Error while refreshing auth token: %s", err)
 			}
