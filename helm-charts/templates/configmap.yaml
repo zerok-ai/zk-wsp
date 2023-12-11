@@ -18,7 +18,7 @@ data:
       killedKey: killed
       clusterIdKey: clusterId
       clusterKeyNamespace: zk-client
-      validateKeyPath: /v1/o/auth/validate
+      validateKeyPath: /v1/o/auth/login
       maxRetries: 3
     target:
       url: "wss://api.{{ .Values.global.zkcloud.host }}:{{ .Values.global.zkcloud.port }}/register"
