@@ -33,7 +33,7 @@ type WspLoginResponse struct {
 }
 
 type WspTokenObj struct {
-	AuthToken string `json:"accessToken"`
+	AuthToken string `json:"token"`
 	ClusterId string `json:"clusterId"`
 	Killed    bool   `json:"killed"`
 }
