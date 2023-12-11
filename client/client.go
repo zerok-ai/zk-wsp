@@ -114,8 +114,9 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var statusCode int
 	// [3]: Send the request to the peer through the WebSocket connection.
-	if err := connection.ProxyRequest(w, r); err != nil {
+	if statusCode, err = connection.ProxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
 		zklogger.Error(ZK_LOG_TAG, "Error while proxying request: %s", err.Error())
 		connection.Close()
@@ -124,6 +125,15 @@ func (c *Client) Request(w http.ResponseWriter, r *http.Request) {
 		// Try to return an error to the client
 		// This might fail if response headers have already been sent
 		wsp.ProxyError(w, err)
+	}
+
+	if statusCode == authTokenUnAuthorizedCode || statusCode == authTokenSessionExpiredCode {
+		go func() {
+			err := c.wspLogin.RefreshAuthToken()
+			if err != nil {
+				zklogger.Error(ZK_LOG_TAG, "Error while refreshing auth token: %s", err)
+			}
+		}()
 	}
 }
 

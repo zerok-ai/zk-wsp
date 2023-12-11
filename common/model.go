@@ -14,5 +14,6 @@ type ValidateAccessTokenObj struct {
 }
 
 type ValidateAccessTokenRequest struct {
-	AccessToken string `json:"accessToken"`
+	AccessToken string `json:"token"`
+	ClusterId   string `json:"clusterId"`
 }

@@ -14,13 +14,13 @@ import (
 
 var WSP_LOGIN_LOG_TAG = "WspLogin"
 
-var refreshTokenMutex sync.Mutex
-
 type WspLogin struct {
-	authToken string
-	clusterId string
-	zkConfig  *Config
-	killed    bool
+	authToken         string
+	clusterId         string
+	zkConfig          *Config
+	killed            bool
+	refreshInProgress bool
+	refreshTokenMutex sync.Mutex
 }
 
 type WspLoginResponse struct {
@@ -44,7 +44,14 @@ func CreateWspLogin(config *Config) *WspLogin {
 	//Assigning initial values.
 	wspLogin.zkConfig = config
 	wspLogin.killed = false
-
+	wspLogin.refreshInProgress = false
+	wspLogin.clusterId = ""
+	wspLogin.authToken = ""
+	err := wspLogin.RefreshWspToken()
+	if err != nil {
+		logger.Error(WSP_LOGIN_LOG_TAG, "Error while refreshing wsp token :", err)
+		return nil
+	}
 	return &wspLogin
 }
 
@@ -52,20 +59,30 @@ func (h *WspLogin) isKilled() bool {
 	return h.killed
 }
 
-func (h *WspLogin) RefreshWspToken(clusterId string) error {
+func (h *WspLogin) RefreshWspToken() error {
 	logger.Info(WSP_LOGIN_LOG_TAG, "Request Wsp token.")
-	refreshTokenMutex.Lock()
-	defer refreshTokenMutex.Unlock()
+	h.refreshTokenMutex.Lock()
+	if h.refreshInProgress {
+		logger.Info(WSP_LOGIN_LOG_TAG, "Refresh token api is already in progress.")
+		h.refreshTokenMutex.Unlock()
+		return nil
+	}
+	h.refreshInProgress = true
+	h.refreshTokenMutex.Unlock()
 
 	if h.killed {
 		logger.Info(WSP_LOGIN_LOG_TAG, "Skipping refresh access token api since cluster is killed.")
 		return fmt.Errorf("cluster is killed")
 	}
 
-	return h.updateAuthTokenFromZkCloud(clusterId)
+	err := h.updateAuthTokenFromZkCloud()
+	h.refreshTokenMutex.Lock()
+	h.refreshInProgress = false
+	h.refreshTokenMutex.Unlock()
+	return err
 }
 
-func (h *WspLogin) updateAuthTokenFromZkCloud(clusterId string) error {
+func (h *WspLogin) updateAuthTokenFromZkCloud() error {
 	port := h.zkConfig.WspLogin.Port
 	protocol := "http"
 	if port == "443" {

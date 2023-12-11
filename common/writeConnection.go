@@ -148,13 +148,14 @@ func (connection *WriteConnection) SendPingMessage() error {
 	}
 }
 
+// TODO: Add access to the request in wsp-client.
 // Proxy a HTTP request through the Proxy over the websocket connection
-func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.Request) (err error) {
+func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.Request) (responseCode int, err error) {
 
 	// [1]: Serialize HTTP request
 	jsonReq, err := json.Marshal(wsp.SerializeHTTPRequest(r))
 	if err != nil {
-		return fmt.Errorf("unable to serialize request : %w", err)
+		return http.StatusBadRequest, fmt.Errorf("unable to serialize request : %w", err)
 	}
 	// i.e.
 	// {
@@ -168,19 +169,19 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	// Send the serialized HTTP request to the peer
 	zklogger.Debug(LOG_TAG, "Sending the http request to peer.")
 	if err := connection.ws.WriteMessage(websocket.TextMessage, jsonReq); err != nil {
-		return fmt.Errorf("unable to write request : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to write request : %w", err)
 	}
 
 	// Pipe the HTTP request body to the peer
 	bodyWriter, err := connection.ws.NextWriter(websocket.BinaryMessage)
 	if err != nil {
-		return fmt.Errorf("unable to get request body writer : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to get request body writer : %w", err)
 	}
 	if _, err := io.Copy(bodyWriter, r.Body); err != nil {
-		return fmt.Errorf("unable to pipe request body : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to pipe request body : %w", err)
 	}
 	if err := bodyWriter.Close(); err != nil {
-		return fmt.Errorf("unable to pipe request body (close) : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to pipe request body (close) : %w", err)
 	}
 
 	// [3]: Wait the HTTP response is ready
@@ -194,7 +195,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 			// See the Receiver operator in https://go.dev/ref/spec for more information.
 			close(responseChannel)
 		}
-		return fmt.Errorf("unable to get http response reader : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to get http response reader : %w", err)
 	}
 
 	// [4]: Read the HTTP response from the peer
@@ -203,7 +204,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	zklogger.Debug(LOG_TAG, "Response received is ", jsonResponse)
 	if err != nil {
 		close(responseChannel)
-		return fmt.Errorf("unable to read http response : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to read http response : %w", err)
 	}
 
 	// Notify the read() goroutine that we are done reading the response
@@ -212,7 +213,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	// Deserialize the HTTP Response
 	httpResponse := new(wsp.HTTPResponse)
 	if err := json.Unmarshal(jsonResponse, httpResponse); err != nil {
-		return fmt.Errorf("unable to unserialize http response : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to unserialize http response : %w", err)
 	}
 
 	// Write response headers back to the client
@@ -221,6 +222,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 			w.Header().Add(header, value)
 		}
 	}
+	statusCode := httpResponse.StatusCode
 	w.WriteHeader(httpResponse.StatusCode)
 
 	// [5]: Wait the HTTP response body is ready
@@ -236,7 +238,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 			// If more is false the channel is already closed
 			close(responseChannel)
 		}
-		return fmt.Errorf("unable to get http response body reader : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to get http response body reader : %w", err)
 	}
 
 	// [6]: Read the HTTP response body from the peer
@@ -244,7 +246,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 	zklogger.Debug(LOG_TAG, "Received response body.")
 	if _, err := io.Copy(w, responseBodyReader); err != nil {
 		close(responseBodyChannel)
-		return fmt.Errorf("unable to pipe response body : %w", err)
+		return http.StatusInternalServerError, fmt.Errorf("unable to pipe response body : %w", err)
 	}
 
 	// Notify read() that we are done reading the response body
@@ -252,7 +254,7 @@ func (connection *WriteConnection) ProxyRequest(w http.ResponseWriter, r *http.R
 
 	connection.Release()
 
-	return
+	return statusCode, nil
 }
 
 // Take notifies that this connection is going to be used

@@ -113,7 +113,7 @@ func (s *Server) Request(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// [3]: Send the request to the peer through the WebSocket connection.
-	if err := connection.ProxyRequest(w, r); err != nil {
+	if _, err := connection.ProxyRequest(w, r); err != nil {
 		// An error occurred throw the connection away
 		zklogger.Error(SERVER_LOG_TAG, "Error while proxying request ", err)
 		connection.Close()
