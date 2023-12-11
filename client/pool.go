@@ -144,7 +144,7 @@ func (pool *Pool) createConnections(ctx context.Context, toCreate int, connType 
 		default:
 			zklogger.Error(POOL_LOG_TAG, "Object is of unknown type")
 		}
-		err := Connect(interfaceConn, ctx, pool, connType, pool.Client.wspLogin.GetAuthToken())
+		err := Connect(interfaceConn, ctx, pool, connType, pool.Client.wspLogin.GetAuthToken(), pool.Client.wspLogin.GetClusterId())
 		if err != nil {
 			zklogger.Error(POOL_LOG_TAG, "Error while creating connection type ", connType, " error is ", err)
 			interfaceConn.Close()

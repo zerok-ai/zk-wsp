@@ -23,6 +23,10 @@ type WspLogin struct {
 	refreshTokenMutex sync.Mutex
 }
 
+func (h *WspLogin) GetClusterId() string {
+	return h.clusterId
+}
+
 func (h *WspLogin) GetAuthToken() string {
 	return h.authToken
 }

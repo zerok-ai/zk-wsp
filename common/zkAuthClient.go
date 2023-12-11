@@ -12,8 +12,8 @@ import (
 
 var ZK_AUTH_LOG_TAG = "ZkAuthClient"
 
-func ValidateKeyWithZkCloud(clusterKey, endpoint string) (ValidateAccessTokenResponse, error) {
-	requestPayload := ValidateAccessTokenRequest{AccessToken: clusterKey}
+func ValidateKeyWithZkCloud(clusterKey, clusterId, endpoint string) (ValidateAccessTokenResponse, error) {
+	requestPayload := ValidateAccessTokenRequest{AccessToken: clusterKey, ClusterId: clusterId}
 
 	logger.Debug(ZK_AUTH_LOG_TAG, "endpoint is ", endpoint)
 

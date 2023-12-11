@@ -130,10 +130,11 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	//This secret Key is the access token.
 	secretKey := r.Header.Get("X-SECRET-KEY")
+	clusterId := r.Header.Get("X-CLUSTER-ID")
 	baseURL := "http://" + s.Config.ZkCloud.Host + ":" + s.Config.ZkCloud.Port + s.Config.ZkCloud.LoginPath
 	zklogger.Debug(SERVER_LOG_TAG, "Base url for login is ", baseURL)
 	zklogger.Debug(SERVER_LOG_TAG, "Secret key is ", secretKey)
-	response, err := common.ValidateKeyWithZkCloud(secretKey, baseURL)
+	response, err := common.ValidateKeyWithZkCloud(secretKey, clusterId, baseURL)
 	if err != nil {
 		wsp.ProxyErrorf(w, "Error while getting clientId : %v", err)
 		return

@@ -11,8 +11,8 @@ import (
 
 var UTILS_LOG_TAG = "ClientUtils"
 
-func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType, token string) error {
-	err := connectInternal(ctx, interfaceConn, pool, connType, token)
+func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, connType common.ConnectionType, token string, clusterId string) error {
+	err := connectInternal(ctx, interfaceConn, pool, connType, token, clusterId)
 	if err != nil {
 		zklogger.Error(UTILS_LOG_TAG, "Unable to connect to %s : %s", pool.Target, err)
 		return err
@@ -22,7 +22,7 @@ func Connect(interfaceConn common.Connection, ctx context.Context, pool *Pool, c
 }
 
 // Connect to the IsolatorServer using a HTTP websocket
-func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType, token string) (err error) {
+func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, connectionType common.ConnectionType, token string, clusterId string) (err error) {
 	if pool == nil {
 		zklogger.Error(UTILS_LOG_TAG, "Aborting connection since pool is nil.")
 	}
@@ -42,7 +42,7 @@ func connectInternal(ctx context.Context, conn common.Connection, pool *Pool, co
 	ws, response, err := pool.Client.dialer.DialContext(
 		ctx,
 		targetConfig.URL,
-		http.Header{"X-SECRET-KEY": {secretKey}},
+		http.Header{"X-SECRET-KEY": {secretKey}, "X-CLUSTER-ID": {clusterId}},
 	)
 
 	if response != nil && response.StatusCode == InvalidClusterKeyResponseCode {
