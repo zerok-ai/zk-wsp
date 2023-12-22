@@ -10,7 +10,7 @@ data:
     port : 8987
     timeout : 3000
     wspLogin:
-      host: api.testacloud01.getanton.com
+      host: api.{{ .Values.global.zkcloud.host }}
       port: 443
       path: /v1/o/auth/login
       clusterSecretName: cluster-info
